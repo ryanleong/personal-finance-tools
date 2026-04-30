@@ -50,12 +50,7 @@ export function InputPanel({ inputs, onChange }: InputPanelProps) {
           value={inputs.currentAge}
           min={18}
           max={99}
-          onChange={(v) =>
-            onChange({
-              currentAge: v,
-              retirementAge: Math.max(inputs.retirementAge, v),
-            })
-          }
+          onChange={(v) => onChange({ currentAge: v })}
         />
         <SliderInput
           label="Retirement Age"
@@ -69,12 +64,7 @@ export function InputPanel({ inputs, onChange }: InputPanelProps) {
           value={inputs.endAge}
           min={Math.max(inputs.retirementAge, inputs.currentAge + 1)}
           max={150}
-          onChange={(v) =>
-            onChange({
-              endAge: v,
-              retirementAge: Math.min(inputs.retirementAge, v),
-            })
-          }
+          onChange={(v) => onChange({ endAge: v })}
         />
       </Section>
 

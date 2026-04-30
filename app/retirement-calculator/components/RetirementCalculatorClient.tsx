@@ -1,13 +1,18 @@
 'use client';
 
+import type { RetirementInputs } from '../types';
 import { useRetirementData } from '../hooks/useRetirementData';
 import { InputPanel } from './InputPanel';
 import { RetirementChart } from './RetirementChart';
 import { StatusBadge } from './StatusBadge';
 import { InflationWarning } from './InflationWarning';
 
-export function RetirementCalculator() {
-  const { inputs, setInputs, result } = useRetirementData();
+interface RetirementCalculatorClientProps {
+  initialInputs?: RetirementInputs;
+}
+
+export function RetirementCalculatorClient({ initialInputs }: RetirementCalculatorClientProps) {
+  const { inputs, setInputs, result } = useRetirementData(initialInputs);
 
   return (
     <div className="flex flex-col lg:flex-row bg-[#080810] text-[#f0f0f8] min-h-screen lg:h-screen lg:overflow-hidden">
