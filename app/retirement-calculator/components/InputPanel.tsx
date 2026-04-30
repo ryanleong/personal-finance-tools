@@ -40,7 +40,7 @@ export function InputPanel({ inputs, onChange }: InputPanelProps) {
           Retirement
         </h1>
         <p className="text-xs text-[#40405a] mt-1.5">
-          Will your money last until age 100?
+          Will your money last until age {inputs.endAge}?
         </p>
       </div>
 
@@ -61,8 +61,20 @@ export function InputPanel({ inputs, onChange }: InputPanelProps) {
           label="Retirement Age"
           value={inputs.retirementAge}
           min={inputs.currentAge}
-          max={100}
+          max={inputs.endAge}
           onChange={(v) => onChange({ retirementAge: v })}
+        />
+        <SliderInput
+          label="End Age"
+          value={inputs.endAge}
+          min={Math.max(inputs.retirementAge, inputs.currentAge + 1)}
+          max={150}
+          onChange={(v) =>
+            onChange({
+              endAge: v,
+              retirementAge: Math.min(inputs.retirementAge, v),
+            })
+          }
         />
       </Section>
 
@@ -96,7 +108,7 @@ export function InputPanel({ inputs, onChange }: InputPanelProps) {
           label="Investment Growth Rate"
           value={inputs.growthRate}
           min={0}
-          max={20}
+          max={40}
           step={0.5}
           format={(v) => `${v.toFixed(1)}%`}
           onChange={(v) => onChange({ growthRate: v })}

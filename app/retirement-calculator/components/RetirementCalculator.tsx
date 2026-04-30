@@ -20,7 +20,7 @@ export function RetirementCalculator() {
       <main className="flex-1 flex flex-col p-5 lg:p-7 gap-4 min-w-0 overflow-hidden">
         {/* Status indicator and warnings */}
         <div className="flex flex-col gap-2 shrink-0">
-          <StatusBadge result={result} />
+          <StatusBadge result={result} endAge={inputs.endAge} />
           <InflationWarning
             inflationRate={inputs.inflationRate}
             growthRate={inputs.growthRate}
@@ -34,6 +34,7 @@ export function RetirementCalculator() {
             isSuccessful={result.isSuccessful}
             retirementAge={inputs.retirementAge}
             currentAge={inputs.currentAge}
+            endAge={inputs.endAge}
             cpfPayoutLevel={inputs.cpfPayoutLevel}
           />
         </div>

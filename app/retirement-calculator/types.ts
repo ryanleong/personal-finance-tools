@@ -3,6 +3,7 @@ export type CPFPayoutLevel = 'none' | 'basic' | 'full' | 'enhanced';
 export interface RetirementInputs {
   currentAge: number;
   retirementAge: number;
+  endAge: number;
   currentInvestedAmount: number;
   monthlyContribution: number;
   annualSpending: number;
@@ -39,6 +40,7 @@ export const CPF_LABELS: Record<CPFPayoutLevel, string> = {
 export const DEFAULT_INPUTS: RetirementInputs = {
   currentAge: 30,
   retirementAge: 65,
+  endAge: 100,
   currentInvestedAmount: 10000,
   monthlyContribution: 1000,
   annualSpending: 40000,

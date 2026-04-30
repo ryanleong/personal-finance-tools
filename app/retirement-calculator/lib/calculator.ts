@@ -8,6 +8,7 @@ export function calculate(inputs: RetirementInputs): CalculationResult {
   const {
     currentAge,
     retirementAge,
+    endAge,
     currentInvestedAmount,
     monthlyContribution,
     annualSpending,
@@ -27,7 +28,7 @@ export function calculate(inputs: RetirementInputs): CalculationResult {
   // Record starting balance
   dataPoints.push({ age: currentAge, balance });
 
-  for (let age = currentAge + 1; age <= 100; age++) {
+  for (let age = currentAge + 1; age <= endAge; age++) {
     if (age <= retirementAge) {
       // Accumulation phase: grow portfolio and add annual contributions
       balance = balance * (1 + growth) + monthlyContribution * 12;

@@ -17,6 +17,7 @@ interface RetirementChartProps {
   isSuccessful: boolean;
   retirementAge: number;
   currentAge: number;
+  endAge: number;
   cpfPayoutLevel: CPFPayoutLevel;
 }
 
@@ -67,6 +68,7 @@ export function RetirementChart({
   isSuccessful,
   retirementAge,
   currentAge,
+  endAge,
   cpfPayoutLevel,
 }: RetirementChartProps) {
   const lineColor = isSuccessful ? LINE_COLOR_SUCCESS : LINE_COLOR_FAIL;
@@ -74,7 +76,7 @@ export function RetirementChart({
   // X-axis ticks: every 5 years from the first multiple of 5 >= currentAge
   const firstTick = Math.ceil(currentAge / 5) * 5;
   const xTicks: number[] = [];
-  for (let age = firstTick; age <= 100; age += 5) {
+  for (let age = firstTick; age <= endAge; age += 5) {
     xTicks.push(age);
   }
 

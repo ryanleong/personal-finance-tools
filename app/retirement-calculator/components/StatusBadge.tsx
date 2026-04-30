@@ -2,9 +2,10 @@ import type { CalculationResult } from '../types';
 
 interface StatusBadgeProps {
   result: CalculationResult;
+  endAge: number;
 }
 
-export function StatusBadge({ result }: StatusBadgeProps) {
+export function StatusBadge({ result, endAge }: StatusBadgeProps) {
   if (result.isSuccessful) {
     return (
       <div className="flex items-center gap-2.5 px-4 py-2.5 bg-[#00e5a0]/8 border border-[#00e5a0]/25 rounded-xl">
@@ -13,7 +14,7 @@ export function StatusBadge({ result }: StatusBadgeProps) {
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00e5a0]" />
         </span>
         <span className="text-sm font-semibold text-[#00e5a0]">
-          Portfolio lasts to age 100 ✓
+          Portfolio lasts to age {endAge} ✓
         </span>
       </div>
     );
