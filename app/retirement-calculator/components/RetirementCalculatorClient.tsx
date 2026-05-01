@@ -15,9 +15,9 @@ export function RetirementCalculatorClient({ initialInputs }: RetirementCalculat
   const { inputs, setInputs, result } = useRetirementData(initialInputs);
 
   return (
-    <div className="flex flex-col lg:flex-row bg-[#080810] text-[#f0f0f8] min-h-screen lg:h-screen lg:overflow-hidden">
+    <div className="flex flex-col lg:flex-row bg-[var(--color-app-bg)] text-[var(--color-app-text)] min-h-screen lg:h-screen lg:overflow-hidden">
       {/* ── Left sidebar: inputs ── */}
-      <aside className="w-full lg:w-85 xl:w-92.5 lg:shrink-0 lg:h-full overflow-y-auto border-b border-[#14142a] lg:border-b-0 lg:border-r lg:border-[#14142a]">
+      <aside className="w-full lg:w-85 xl:w-92.5 lg:shrink-0 lg:h-full overflow-y-auto border-b border-[var(--color-app-border)] lg:border-b-0 lg:border-r lg:border-[var(--color-app-border)]">
         <InputPanel inputs={inputs} onChange={setInputs} />
       </aside>
 
