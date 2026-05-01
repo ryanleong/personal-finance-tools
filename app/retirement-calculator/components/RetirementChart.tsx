@@ -43,22 +43,49 @@ interface TooltipPayload {
   payload?: DataPoint;
 }
 
+interface TooltipRow {
+  label: string;
+  value: number;
+  color?: string;
+}
+
 function ChartTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) {
   if (!active || !payload?.length || !payload[0]?.payload) return null;
-  const { age, balance } = payload[0].payload;
+  const { age, balance, contribution, growthAmount, expenditure, cpfPayout } = payload[0].payload;
   const isNegative = balance < 0;
 
+  const rows: TooltipRow[] = [];
+  if (contribution > 0) rows.push({ label: 'Contribution', value: contribution, color: '#00e5a0' });
+  if (growthAmount !== 0) rows.push({ label: 'Growth', value: growthAmount, color: '#7c6fef' });
+  if (expenditure > 0) rows.push({ label: 'Expenditure', value: -expenditure, color: '#ff3b5c' });
+  if (cpfPayout > 0) rows.push({ label: 'CPF Payout', value: cpfPayout, color: '#ffb340' });
+
   return (
-    <div className="bg-[#16162a] border border-[#2a2a42] rounded-xl px-3.5 py-2.5 shadow-2xl">
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-[#5a5a80] mb-1">
+    <div className="bg-[#16162a] border border-[#2a2a42] rounded-xl px-3.5 py-2.5 shadow-2xl min-w-37.5">
+      <p className="text-base font-semibold tracking-widest uppercase text-[#5a5a80] mb-1.5">
         Age {age}
       </p>
       <p
-        className="text-sm font-mono font-bold tabular-nums"
+        className="text-xl font-mono font-bold tabular-nums mb-2"
         style={{ color: isNegative ? LINE_COLOR_FAIL : '#f0f0f8' }}
       >
         {formatTooltipBalance(balance)}
       </p>
+      {rows.length > 0 && (
+        <div className="border-t border-[#2a2a42] pt-1.5 flex flex-col gap-1">
+          {rows.map(({ label, value, color }) => (
+            <div key={label} className="flex items-center justify-between gap-4">
+              <span className="text-base text-[#5a5a80]">{label}</span>
+              <span
+                className="text-base font-mono tabular-nums font-semibold"
+                style={{ color: color ?? '#a0a0c0' }}
+              >
+                {value < 0 ? '-' : '+'}{formatTooltipBalance(Math.abs(value))}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import type { RetirementInputs } from '../types';
 import { useRetirementData } from '../hooks/useRetirementData';
 import { InputPanel } from './InputPanel';
 import { RetirementChart } from './RetirementChart';
-import { StatusBadge } from './StatusBadge';
+import { SummaryTable } from './SummaryTable';
 import { InflationWarning } from './InflationWarning';
 
 interface RetirementCalculatorClientProps {
@@ -19,13 +19,17 @@ export function RetirementCalculatorClient({ initialInputs }: RetirementCalculat
       {/* ── Left sidebar: inputs ── */}
       <aside className="w-full lg:w-85 xl:w-92.5 lg:shrink-0 lg:h-full overflow-y-auto border-b border-[var(--color-app-border)] lg:border-b-0 lg:border-r lg:border-[var(--color-app-border)]">
         <InputPanel inputs={inputs} onChange={setInputs} />
+
+        {/* Summary table: mobile only (below inputs) */}
+        <div className="lg:hidden px-5 pb-5">
+          <SummaryTable result={result} retirementAge={inputs.retirementAge} endAge={inputs.endAge} />
+        </div>
       </aside>
 
-      {/* ── Right area: status + chart ── */}
+      {/* ── Right area: warnings + chart + summary ── */}
       <main className="flex-1 flex flex-col p-5 lg:p-7 gap-4 min-w-0 overflow-hidden">
-        {/* Status indicator and warnings */}
-        <div className="flex flex-col gap-2 shrink-0">
-          <StatusBadge result={result} endAge={inputs.endAge} />
+        {/* Inflation warning */}
+        <div className="shrink-0">
           <InflationWarning
             inflationRate={inputs.inflationRate}
             growthRate={inputs.growthRate}
@@ -42,6 +46,11 @@ export function RetirementCalculatorClient({ initialInputs }: RetirementCalculat
             endAge={inputs.endAge}
             cpfPayoutLevel={inputs.cpfPayoutLevel}
           />
+        </div>
+
+        {/* Summary table: desktop only (below chart) */}
+        <div className="hidden lg:block shrink-0">
+          <SummaryTable result={result} retirementAge={inputs.retirementAge} endAge={inputs.endAge} />
         </div>
       </main>
     </div>
