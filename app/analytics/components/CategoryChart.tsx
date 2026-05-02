@@ -24,6 +24,25 @@ function yTickFormatter(v: number): string {
   return `$${v.toFixed(0)}`;
 }
 
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: { value: number; payload: CategoryBreakdown }[];
+  label?: string;
+}
+
+function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const value = payload[0].value;
+  return (
+    <div className="bg-[#16162a] border border-[#2a2a42] rounded-xl px-3.5 py-2.5 shadow-2xl">
+      <p className="text-xs font-medium uppercase tracking-wide text-[#5a5a80] mb-1">{label}</p>
+      <p className="text-base font-mono font-bold tabular-nums text-[#f0f0f8]">
+        {formatSGDTooltip(value)}
+      </p>
+    </div>
+  );
+}
+
 export function CategoryChart({ data, color }: CategoryChartProps) {
   const hasMany = data.length > 4;
 
@@ -42,12 +61,7 @@ export function CategoryChart({ data, color }: CategoryChartProps) {
           tick={{ fontSize: 11 }}
           width={56}
         />
-        <Tooltip
-          formatter={(value) => [
-            formatSGDTooltip(typeof value === 'number' ? value : Number(value)),
-            'Amount',
-          ]}
-        />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: 'transparent' }} />
         <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
           {data.map((entry) => (
             <Cell key={entry.category} fill={color} />
