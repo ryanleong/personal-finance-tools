@@ -40,16 +40,16 @@ export function DataPreview({
   const allRows = [headers, ...previewRows];
 
   return (
-    <Card className="w-full bg-[var(--color-app-surface)] border-[var(--color-app-border)]">
+    <Card className="w-full bg-card border-border">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-[var(--color-app-text)]">Data Preview</CardTitle>
-            <CardDescription className="mt-1.5 text-[#a0a0b8]">
+            <CardTitle className="text-foreground">Data Preview</CardTitle>
+            <CardDescription className="mt-1.5 text-muted-foreground">
               Click on a row to set it as the header row. All rows above will be excluded.
             </CardDescription>
           </div>
-          <Badge variant="secondary" className="bg-[var(--color-app-bg)] text-[#a0a0b8] border-[var(--color-app-border)]">
+          <Badge variant="secondary" className="bg-background text-muted-foreground border-border">
             Showing {previewRows.length} of {rows.length} rows
           </Badge>
         </div>
@@ -66,7 +66,7 @@ export function DataPreview({
                   <TableRow
                     key={rowIndex}
                     className={clsx(
-                      'cursor-pointer transition-colors border-[var(--color-app-border)]',
+                      'cursor-pointer transition-colors border-border',
                       isSelected
                         ? 'bg-blue-900/30 border-l-4 border-l-blue-400 hover:bg-blue-900/40'
                         : isHovered
@@ -77,7 +77,7 @@ export function DataPreview({
                     onMouseEnter={() => setHoveredRow(rowIndex)}
                     onMouseLeave={() => setHoveredRow(null)}
                   >
-                    <TableCell className="w-16 bg-[var(--color-app-bg)] text-center font-mono text-xs text-[#a0a0b8] p-2 border-r border-[var(--color-app-border)]">
+                    <TableCell className="w-16 bg-background text-center font-mono text-xs text-muted-foreground p-2 border-r border-border">
                       <div className="flex items-center justify-center gap-2">
                         {isSelected ? (
                           <Check className="w-3 h-3 text-blue-400" />
@@ -92,7 +92,7 @@ export function DataPreview({
                         key={cellIndex}
                         className={clsx(
                           'whitespace-nowrap max-w-xs truncate p-4',
-                          isSelected ? 'font-medium text-[var(--color-app-text)]' : 'text-[var(--color-app-text)]'
+                          isSelected ? 'font-medium text-foreground' : 'text-foreground'
                         )}
                         title={String(cell)}
                       >
@@ -106,7 +106,7 @@ export function DataPreview({
           </Table>
         </div>
       </CardContent>
-      <div className="p-4 border-t border-[var(--color-app-border)] bg-[var(--color-app-bg)]/50 text-sm text-[#a0a0b8] flex justify-end">
+      <div className="p-4 border-t border-border bg-background/50 text-sm text-muted-foreground flex justify-end">
         <p>
           <span className="font-medium text-blue-400">Row {selectedHeaderRow}</span> selected as header
         </p>

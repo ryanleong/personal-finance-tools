@@ -40,7 +40,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
         </thead>
         <tbody>
           {sorted.map((tx, i) => (
-            <tr key={i} className="border-t border-[var(--color-app-border)]/50">
+            <tr key={i} className="border-t border-border/50">
               <td className="py-1.5 pr-3">{formatDate(tx.date)}</td>
               <td className="py-1.5 pr-3 max-w-[200px] truncate">{tx.notes}</td>
               <td className="py-1.5 pr-3">{tx.account}</td>

@@ -48,36 +48,36 @@ export function SummaryTable({ result, retirementAge, endAge }: SummaryTableProp
       </div>
 
       {/* Summary table */}
-      <div className="bg-[#16162a] border border-[#2a2a42] rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#2a2a42]">
-              <th className="text-left px-4 py-2.5 text-[10px] font-semibold tracking-widest uppercase text-[#5a5a80]">
+            <tr className="border-b border-border">
+              <th className="text-left px-4 py-2.5 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
                 Milestone
               </th>
-              <th className="text-right px-4 py-2.5 text-[10px] font-semibold tracking-widest uppercase text-[#5a5a80]">
+              <th className="text-right px-4 py-2.5 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
                 Portfolio Value
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-[#2a2a42]/60">
-              <td className="px-4 py-3 text-[#a0a0c0]">
+            <tr className="border-b border-border/60">
+              <td className="px-4 py-3 text-muted-foreground">
                 At retirement
-                <span className="ml-1.5 text-[10px] font-mono text-[#5a5a80]">(age {retirementAge})</span>
+                <span className="ml-1.5 text-[10px] font-mono text-muted-foreground/60">(age {retirementAge})</span>
               </td>
-              <td className="px-4 py-3 text-right font-mono font-bold tabular-nums text-[#f0f0f8]">
+              <td className="px-4 py-3 text-right font-mono font-bold tabular-nums text-foreground">
                 {formatBalance(balanceAtRetirement)}
               </td>
             </tr>
             <tr>
-              <td className="px-4 py-3 text-[#a0a0c0]">
+              <td className="px-4 py-3 text-muted-foreground">
                 At end of plan
-                <span className="ml-1.5 text-[10px] font-mono text-[#5a5a80]">(age {endAge})</span>
+                <span className="ml-1.5 text-[10px] font-mono text-muted-foreground/60">(age {endAge})</span>
               </td>
               <td
                 className="px-4 py-3 text-right font-mono font-bold tabular-nums"
-                style={{ color: balanceAtDeath < 0 ? COLOR_FAIL : '#f0f0f8' }}
+                style={{ color: balanceAtDeath < 0 ? COLOR_FAIL : 'var(--color-foreground)' }}
               >
                 {formatBalance(balanceAtDeath)}
               </td>
@@ -89,17 +89,17 @@ export function SummaryTable({ result, retirementAge, endAge }: SummaryTableProp
       {/* Failure notice */}
       {!isSuccessful && (
         <div className="flex items-start gap-3 px-4 py-3 bg-[#ffb340]/8 border border-[#ffb340]/25 rounded-xl">
-          <span className="text-[#ffb340] text-base leading-tight shrink-0 mt-px">⚠</span>
+          <span className="text-[#ffb340] text-base leading-tight shrink-0 mt-px">âš </span>
           <p className="text-sm text-[#ffb340] leading-relaxed">
             {maxYearsExceeded ? (
               <>
-                <span className="font-semibold">Cannot fix within 20 years — </span>
+                <span className="font-semibold">Cannot fix within 20 years â€” </span>
                 Even retiring 20 years later does not make this plan successful. Consider
                 increasing contributions or reducing spending.
               </>
             ) : (
               <>
-                <span className="font-semibold">Suggested fix — </span>
+                <span className="font-semibold">Suggested fix â€” </span>
                 Retire at {proposedRetirementAge} (+{additionalYearsToSuccess} year
                 {additionalYearsToSuccess !== 1 ? 's' : ''}) to reach your goal.
               </>

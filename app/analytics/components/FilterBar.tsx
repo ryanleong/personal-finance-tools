@@ -91,7 +91,7 @@ export function FilterBar({ filterState, onFilterChange, availableAccounts }: Fi
         </SelectContent>
       </Select>
 
-      {/* Custom date range inputs — only shown when period is 'custom' */}
+      {/* Custom date range inputs â€” only shown when period is 'custom' */}
       {selectedPeriod === 'custom' && (
         <div className="flex items-center gap-2">
           <label className="text-sm opacity-70 sr-only" htmlFor="custom-start">
@@ -136,7 +136,7 @@ export function FilterBar({ filterState, onFilterChange, availableAccounts }: Fi
         </div>
       )}
 
-      {/* Account filter — Issue #4 */}
+      {/* Account filter â€” Issue #4 */}
       {availableAccounts.length > 0 && (
         <div className="relative" ref={dropdownRef}>
           <button
@@ -162,7 +162,7 @@ export function FilterBar({ filterState, onFilterChange, availableAccounts }: Fi
           </button>
 
           {accountDropdownOpen && (
-            <div className="absolute left-0 top-full mt-1 min-w-[180px] bg-[var(--color-app-surface)] border border-[var(--color-app-border)] rounded-xl shadow-lg z-10 py-1">
+            <div className="absolute left-0 top-full mt-1 min-w-[180px] bg-card border border-border rounded-xl shadow-lg z-10 py-1">
               {/* All accounts option */}
               <button
                 type="button"
@@ -175,8 +175,8 @@ export function FilterBar({ filterState, onFilterChange, availableAccounts }: Fi
                 <span
                   className={`inline-flex items-center justify-center w-4 h-4 rounded border flex-shrink-0 ${
                     selectedAccounts.length === 0
-                      ? 'bg-[var(--color-app-text)] border-[var(--color-app-text)]'
-                      : 'border-[var(--color-app-border)]'
+                      ? 'bg-foreground border-foreground'
+                      : 'border-border'
                   }`}
                 >
                   {selectedAccounts.length === 0 && (
@@ -186,7 +186,7 @@ export function FilterBar({ filterState, onFilterChange, availableAccounts }: Fi
                       height="10"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="var(--color-app-bg)"
+                      style={{ stroke: 'var(--background)' }}
                       strokeWidth="3"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -198,7 +198,7 @@ export function FilterBar({ filterState, onFilterChange, availableAccounts }: Fi
                 <span>All accounts</span>
               </button>
 
-              <div className="my-1 border-t border-[var(--color-app-border)]" />
+              <div className="my-1 border-t border-border" />
 
               {/* Individual account options */}
               {availableAccounts.map((account) => {
@@ -213,8 +213,8 @@ export function FilterBar({ filterState, onFilterChange, availableAccounts }: Fi
                     <span
                       className={`inline-flex items-center justify-center w-4 h-4 rounded border flex-shrink-0 ${
                         isChecked
-                          ? 'bg-[var(--color-app-text)] border-[var(--color-app-text)]'
-                          : 'border-[var(--color-app-border)]'
+                          ? 'bg-foreground border-foreground'
+                          : 'border-border'
                       }`}
                     >
                       {isChecked && (
@@ -224,7 +224,7 @@ export function FilterBar({ filterState, onFilterChange, availableAccounts }: Fi
                           height="10"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="var(--color-app-bg)"
+                          style={{ stroke: 'var(--background)' }}
                           strokeWidth="3"
                           strokeLinecap="round"
                           strokeLinejoin="round"

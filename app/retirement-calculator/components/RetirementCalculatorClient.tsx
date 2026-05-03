@@ -15,9 +15,9 @@ export function RetirementCalculatorClient({ initialInputs }: RetirementCalculat
   const { inputs, setInputs, result } = useRetirementData(initialInputs);
 
   return (
-    <div className="flex flex-col lg:flex-row bg-[var(--color-app-bg)] text-[var(--color-app-text)] min-h-screen lg:h-screen lg:overflow-hidden">
-      {/* ── Left sidebar: inputs ── */}
-      <aside className="w-full lg:w-85 xl:w-92.5 lg:shrink-0 lg:h-full overflow-y-auto border-b border-[var(--color-app-border)] lg:border-b-0 lg:border-r lg:border-[var(--color-app-border)]">
+    <div className="flex flex-col lg:flex-row bg-background text-foreground min-h-screen lg:h-screen lg:overflow-hidden">
+      {/* â”€â”€ Left sidebar: inputs â”€â”€ */}
+      <aside className="w-full lg:w-85 xl:w-92.5 lg:shrink-0 lg:h-full overflow-y-auto border-b border-border lg:border-b-0 lg:border-r lg:border-border">
         <InputPanel inputs={inputs} onChange={setInputs} />
 
         {/* Summary table: mobile only (below inputs) */}
@@ -26,7 +26,7 @@ export function RetirementCalculatorClient({ initialInputs }: RetirementCalculat
         </div>
       </aside>
 
-      {/* ── Right area: warnings + chart + summary ── */}
+      {/* â”€â”€ Right area: warnings + chart + summary â”€â”€ */}
       <main className="flex-1 flex flex-col p-5 lg:p-7 gap-4 min-w-0 overflow-hidden">
         {/* Inflation warning */}
         <div className="shrink-0">

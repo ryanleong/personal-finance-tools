@@ -48,10 +48,10 @@ export function UploadSection({ isLoaded, onFileSelect, error }: UploadSectionPr
       onDrop={handleDrop}
       className={[
         'flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10',
-        'bg-[var(--color-app-surface)] border-[var(--color-app-border)]',
+        'bg-card border-border',
         'transition-colors duration-150',
         isDragOver
-          ? 'border-[var(--color-app-accent,#6366f1)] bg-[var(--color-app-accent-subtle,rgba(99,102,241,0.08))]'
+          ? 'border-primary bg-primary/10'
           : '',
       ]
         .filter(Boolean)
@@ -65,7 +65,7 @@ export function UploadSection({ isLoaded, onFileSelect, error }: UploadSectionPr
       <button
         type="button"
         onClick={handleBrowseClick}
-        className="px-4 py-2 text-sm font-medium rounded-md bg-[var(--color-app-surface)] border border-[var(--color-app-border)] hover:opacity-80 transition-opacity"
+        className="px-4 py-2 text-sm font-medium rounded-md bg-card border border-border hover:opacity-80 transition-opacity"
       >
         Browse file
       </button>
@@ -81,14 +81,14 @@ export function UploadSection({ isLoaded, onFileSelect, error }: UploadSectionPr
 
   if (isLoaded) {
     return (
-      <div className="rounded-lg bg-[var(--color-app-surface)] border border-[var(--color-app-border)] overflow-hidden">
+      <div className="rounded-lg bg-card border border-border overflow-hidden">
         {/* Collapsed bar */}
         <button
           type="button"
           onClick={() => setIsExpanded((v) => !v)}
           className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:opacity-80 transition-opacity"
         >
-          <span>CSV loaded · Replace file</span>
+          <span>CSV loaded. Replace file?</span>
           <ChevronDown
             className={`w-4 h-4 opacity-60 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
           />

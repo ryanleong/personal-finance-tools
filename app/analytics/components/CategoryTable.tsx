@@ -16,7 +16,7 @@ export function CategoryTable({ data, formatAmount }: CategoryTableProps) {
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="border-b border-[var(--color-app-border)]">
+        <tr className="border-b border-border">
           <th className="text-left font-medium opacity-60 pb-2 pr-4">Category</th>
           <th className="text-right font-medium opacity-60 pb-2 pr-4">Amount (SGD)</th>
           <th className="text-right font-medium opacity-60 pb-2">% of Total</th>
@@ -28,7 +28,7 @@ export function CategoryTable({ data, formatAmount }: CategoryTableProps) {
           return (
             <React.Fragment key={breakdown.category}>
               <tr
-                className="border-b border-[var(--color-app-border)] cursor-pointer hover:bg-white/5 transition-colors"
+                className="border-b border-border cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() =>
                   setExpandedCategory((prev) =>
                     prev === breakdown.category ? null : breakdown.category,

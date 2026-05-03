@@ -42,7 +42,7 @@ export function CurrencyInput({ label, value, onChange }: CurrencyInputProps) {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <label className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#5a5a80]">
+      <label className="text-[11px] font-semibold tracking-[0.15em] uppercase text-muted-foreground">
         {label}
       </label>
       <div className="relative">
@@ -57,7 +57,7 @@ export function CurrencyInput({ label, value, onChange }: CurrencyInputProps) {
           onBlur={handleBlur}
           onChange={handleChange}
           placeholder="0"
-          className="w-full bg-[#0c0c18] border border-[#222238] rounded-lg pl-7 pr-3 py-2.5 text-sm font-mono text-[#f0f0f8] placeholder-[#35354a] focus:outline-none focus:border-[#ff2d78] focus:ring-1 focus:ring-[#ff2d78]/20 transition-colors duration-150"
+          className="w-full bg-input border border-border rounded-lg pl-7 pr-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#ff2d78] focus:ring-1 focus:ring-[#ff2d78]/20 transition-colors duration-150"
         />
       </div>
     </div>

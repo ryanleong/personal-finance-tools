@@ -78,32 +78,32 @@ export function ColumnMapping({ headers, onMappingComplete }: ColumnMappingProps
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       <div className="mb-6 space-y-2">
-        <h3 className="text-2xl font-semibold tracking-tight text-[var(--color-app-text)]">Map Your Columns</h3>
-        <p className="text-[#a0a0b8]">
+        <h3 className="text-2xl font-semibold tracking-tight text-foreground">Map Your Columns</h3>
+        <p className="text-muted-foreground">
           Select which columns from your file correspond to each field.
         </p>
       </div>
 
       <div className="grid gap-6">
         {/* Date Column */}
-        <Card className="bg-[var(--color-app-surface)] border-[var(--color-app-border)]">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
             <div className="p-2 bg-blue-900 rounded-lg">
               <Calendar className="w-5 h-5 text-blue-300" />
             </div>
             <div className="flex-1">
-              <CardTitle className="text-base font-medium text-[var(--color-app-text)]">Date Column</CardTitle>
-              <CardDescription className="text-[#a0a0b8]">Select the column containing transaction dates</CardDescription>
+              <CardTitle className="text-base font-medium text-foreground">Date Column</CardTitle>
+              <CardDescription className="text-muted-foreground">Select the column containing transaction dates</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="grid gap-2">
-              <Label htmlFor="date-column" className="text-[var(--color-app-text)]">Select Column</Label>
+              <Label htmlFor="date-column" className="text-foreground">Select Column</Label>
               <Select value={dateColumn} onValueChange={(v) => setDateColumn(v ?? '')} items={headerItems}>
-                <SelectTrigger id="date-column" className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)]">
+                <SelectTrigger id="date-column" className="bg-card border-border text-foreground">
                   <SelectValue placeholder="Select a column..." />
                 </SelectTrigger>
-                <SelectContent className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)] !w-auto min-w-[var(--anchor-width)]">
+                <SelectContent className="bg-card border-border text-foreground !w-auto min-w-[var(--anchor-width)]">
                   {headers.map((header, index) => (
                     <SelectItem key={index} value={String(index)} label={header || `Column ${index + 1}`}>
                       {header || `Column ${index + 1}`}
@@ -116,14 +116,14 @@ export function ColumnMapping({ headers, onMappingComplete }: ColumnMappingProps
         </Card>
 
         {/* Description Columns */}
-        <Card className="bg-[var(--color-app-surface)] border-[var(--color-app-border)]">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
             <div className="p-2 bg-green-900 rounded-lg">
               <FileText className="w-5 h-5 text-green-300" />
             </div>
             <div className="flex-1">
-              <CardTitle className="text-base font-medium text-[var(--color-app-text)]">Description Columns</CardTitle>
-              <CardDescription className="text-[#a0a0b8]">Select one or more columns to merge as description</CardDescription>
+              <CardTitle className="text-base font-medium text-foreground">Description Columns</CardTitle>
+              <CardDescription className="text-muted-foreground">Select one or more columns to merge as description</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="pt-4">
@@ -150,18 +150,18 @@ export function ColumnMapping({ headers, onMappingComplete }: ColumnMappingProps
               </div>
 
               {descriptionColumns.length > 0 && (
-                <div className="bg-[var(--color-app-bg)] p-3 rounded-md border border-[var(--color-app-border)]">
-                   <Label className="text-xs text-[#a0a0b8] uppercase font-bold tracking-wider mb-2 block">
+                <div className="bg-background p-3 rounded-md border border-border">
+                   <Label className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2 block">
                      Preview
                    </Label>
                    <div className="flex flex-wrap gap-2 items-center text-sm">
                       {descriptionColumns.map((colIndex, i) => (
                         <div key={colIndex} className="flex items-center">
-                          <Badge variant="secondary" className="font-normal bg-[var(--color-app-surface)] text-[var(--color-app-text)] border-[var(--color-app-border)]">
+                          <Badge variant="secondary" className="font-normal bg-card text-foreground border-border">
                              {headers[colIndex] || `Column ${colIndex + 1}`}
                           </Badge>
                           {i < descriptionColumns.length - 1 && (
-                            <span className="mx-1 text-[#a0a0b8]">+</span>
+                            <span className="mx-1 text-muted-foreground">+</span>
                           )}
                         </div>
                       ))}
@@ -173,58 +173,58 @@ export function ColumnMapping({ headers, onMappingComplete }: ColumnMappingProps
         </Card>
 
         {/* Amount Configuration */}
-        <Card className="bg-[var(--color-app-surface)] border-[var(--color-app-border)]">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
             <div className="p-2 bg-purple-900 rounded-lg">
               <DollarSign className="w-5 h-5 text-purple-300" />
             </div>
             <div className="flex-1">
-              <CardTitle className="text-base font-medium text-[var(--color-app-text)]">Amount Configuration</CardTitle>
-              <CardDescription className="text-[#a0a0b8]">Choose how transaction amounts are stored</CardDescription>
+              <CardTitle className="text-base font-medium text-foreground">Amount Configuration</CardTitle>
+              <CardDescription className="text-muted-foreground">Choose how transaction amounts are stored</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="pt-4 space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div
                 className={clsx(
-                  "cursor-pointer rounded-lg border-2 p-4 transition-all hover:bg-[var(--color-app-bg)]",
-                  amountType === 'single' ? "border-purple-600 bg-purple-900/20" : "border-[var(--color-app-border)]"
+                  "cursor-pointer rounded-lg border-2 p-4 transition-all hover:bg-background",
+                  amountType === 'single' ? "border-purple-600 bg-purple-900/20" : "border-border"
                 )}
                 onClick={() => setAmountType('single')}
               >
                  <div className="flex items-center mb-2">
-                    <Coins className={clsx("w-5 h-5 mr-2", amountType === 'single' ? "text-purple-400" : "text-[#a0a0b8]")} />
-                    <span className="font-semibold text-sm text-[var(--color-app-text)]">Single Column</span>
+                    <Coins className={clsx("w-5 h-5 mr-2", amountType === 'single' ? "text-purple-400" : "text-muted-foreground")} />
+                    <span className="font-semibold text-sm text-foreground">Single Column</span>
                  </div>
-                 <p className="text-xs text-[#a0a0b8]">Positive/negative values in one column</p>
+                 <p className="text-xs text-muted-foreground">Positive/negative values in one column</p>
               </div>
 
               <div
                 className={clsx(
-                  "cursor-pointer rounded-lg border-2 p-4 transition-all hover:bg-[var(--color-app-bg)]",
-                  amountType === 'split' ? "border-purple-600 bg-purple-900/20" : "border-[var(--color-app-border)]"
+                  "cursor-pointer rounded-lg border-2 p-4 transition-all hover:bg-background",
+                  amountType === 'split' ? "border-purple-600 bg-purple-900/20" : "border-border"
                 )}
                 onClick={() => setAmountType('split')}
               >
                  <div className="flex items-center mb-2">
-                    <ArrowLeftRight className={clsx("w-5 h-5 mr-2", amountType === 'split' ? "text-purple-400" : "text-[#a0a0b8]")} />
-                    <span className="font-semibold text-sm text-[var(--color-app-text)]">Split Columns</span>
+                    <ArrowLeftRight className={clsx("w-5 h-5 mr-2", amountType === 'split' ? "text-purple-400" : "text-muted-foreground")} />
+                    <span className="font-semibold text-sm text-foreground">Split Columns</span>
                  </div>
-                 <p className="text-xs text-[#a0a0b8]">Separate Credit and Debit columns</p>
+                 <p className="text-xs text-muted-foreground">Separate Credit and Debit columns</p>
               </div>
             </div>
 
-            <Separator className="bg-[var(--color-app-border)]" />
+            <Separator className="bg-border" />
 
             {amountType === 'single' ? (
               <div className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="amount-column" className="text-[var(--color-app-text)]">Select Amount Column</Label>
+                  <Label htmlFor="amount-column" className="text-foreground">Select Amount Column</Label>
                   <Select value={amountColumn} onValueChange={(v) => setAmountColumn(v ?? '')} items={headerItems}>
-                    <SelectTrigger id="amount-column" className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)]">
+                    <SelectTrigger id="amount-column" className="bg-card border-border text-foreground">
                       <SelectValue placeholder="Select a column..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)] !w-auto min-w-[var(--anchor-width)]">
+                    <SelectContent className="bg-card border-border text-foreground !w-auto min-w-[var(--anchor-width)]">
                       {headers.map((header, index) => (
                         <SelectItem key={index} value={String(index)} label={header || `Column ${index + 1}`}>
                           {header || `Column ${index + 1}`}
@@ -234,16 +234,16 @@ export function ColumnMapping({ headers, onMappingComplete }: ColumnMappingProps
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="positive-is-income" className="text-[var(--color-app-text)]">Positive values are</Label>
+                  <Label htmlFor="positive-is-income" className="text-foreground">Positive values are</Label>
                   <Select
                     value={positiveIsIncome ? 'income' : 'expense'}
                     onValueChange={(val) => setPositiveIsIncome((val ?? 'income') === 'income')}
                     items={incomeItems}
                   >
-                    <SelectTrigger id="positive-is-income" className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)]">
+                    <SelectTrigger id="positive-is-income" className="bg-card border-border text-foreground">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)] !w-auto min-w-[var(--anchor-width)]">
+                    <SelectContent className="bg-card border-border text-foreground !w-auto min-w-[var(--anchor-width)]">
                       <SelectItem value="income" label="Income (money in)">Income (money in)</SelectItem>
                       <SelectItem value="expense" label="Expense (money out)">Expense (money out)</SelectItem>
                     </SelectContent>
@@ -253,12 +253,12 @@ export function ColumnMapping({ headers, onMappingComplete }: ColumnMappingProps
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label htmlFor="credit-column" className="text-[var(--color-app-text)]">Credit Column (Money In)</Label>
+                  <Label htmlFor="credit-column" className="text-foreground">Credit Column (Money In)</Label>
                   <Select value={creditColumn} onValueChange={(v) => setCreditColumn(v ?? '')} items={headerItems}>
-                    <SelectTrigger id="credit-column" className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)]">
+                    <SelectTrigger id="credit-column" className="bg-card border-border text-foreground">
                       <SelectValue placeholder="Select Credit..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)] !w-auto min-w-[var(--anchor-width)]">
+                    <SelectContent className="bg-card border-border text-foreground !w-auto min-w-[var(--anchor-width)]">
                       {headers.map((header, index) => (
                         <SelectItem key={index} value={String(index)} label={header || `Column ${index + 1}`}>
                           {header || `Column ${index + 1}`}
@@ -268,12 +268,12 @@ export function ColumnMapping({ headers, onMappingComplete }: ColumnMappingProps
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="debit-column" className="text-[var(--color-app-text)]">Debit Column (Money Out)</Label>
+                  <Label htmlFor="debit-column" className="text-foreground">Debit Column (Money Out)</Label>
                   <Select value={debitColumn} onValueChange={(v) => setDebitColumn(v ?? '')} items={headerItems}>
-                    <SelectTrigger id="debit-column" className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)]">
+                    <SelectTrigger id="debit-column" className="bg-card border-border text-foreground">
                       <SelectValue placeholder="Select Debit..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-[var(--color-app-surface)] border-[var(--color-app-border)] text-[var(--color-app-text)] !w-auto min-w-[var(--anchor-width)]">
+                    <SelectContent className="bg-card border-border text-foreground !w-auto min-w-[var(--anchor-width)]">
                       {headers.map((header, index) => (
                         <SelectItem key={index} value={String(index)} label={header || `Column ${index + 1}`}>
                           {header || `Column ${index + 1}`}

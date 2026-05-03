@@ -24,7 +24,7 @@ interface SectionProps {
 
 function Section({ title, data, color, emptyMessage }: SectionProps) {
   return (
-    <div className="bg-[var(--color-app-surface)] border border-[var(--color-app-border)] rounded-xl p-5 flex flex-col gap-5">
+    <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-5">
       <h2 className="text-base font-semibold">{title}</h2>
       {data.length === 0 ? (
         <p className="text-sm opacity-50 py-6 text-center">{emptyMessage}</p>

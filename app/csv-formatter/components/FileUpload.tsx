@@ -84,10 +84,10 @@ export function FileUpload({
     <div className="w-full max-w-2xl mx-auto space-y-4">
       <Card
         className={clsx(
-          'relative border-2 border-dashed transition-all duration-300 overflow-hidden cursor-pointer bg-[var(--color-app-surface)]',
+          'relative border-2 border-dashed transition-all duration-300 overflow-hidden cursor-pointer bg-card',
           isDragging
-            ? 'border-blue-400 bg-[var(--color-app-surface)] scale-[1.01]'
-            : 'border-[var(--color-app-border)] hover:border-blue-400/50 hover:bg-[var(--color-app-surface)]'
+            ? 'border-blue-400 bg-card scale-[1.01]'
+            : 'border-border hover:border-blue-400/50 hover:bg-card'
         )}
         onDragEnter={handleDragIn}
         onDragLeave={handleDragOut}
@@ -116,20 +116,20 @@ export function FileUpload({
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-sm text-[#a0a0b8]">
+              <p className="text-sm text-muted-foreground">
                 File selected successfully. Click below to choose a different file.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 bg-[var(--color-app-surface)] text-[var(--color-app-text)] rounded-full w-fit mx-auto border border-[var(--color-app-border)]">
+              <div className="p-4 bg-card text-foreground rounded-full w-fit mx-auto border border-border">
                 <Upload className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-semibold tracking-tight text-[var(--color-app-text)]">
+                <h3 className="text-xl font-semibold tracking-tight text-foreground">
                   Upload Your Transaction File
                 </h3>
-                <p className="text-[#a0a0b8] text-sm">
+                <p className="text-muted-foreground text-sm">
                   Drag and drop your file here, or click to browse
                 </p>
               </div>
@@ -137,7 +137,7 @@ export function FileUpload({
                 {acceptedFormats.map((format) => (
                   <span
                     key={format}
-                    className="inline-flex items-center rounded-md border border-[var(--color-app-border)] px-2.5 py-0.5 text-xs font-semibold bg-[var(--color-app-surface)] text-[var(--color-app-text)]"
+                    className="inline-flex items-center rounded-md border border-border px-2.5 py-0.5 text-xs font-semibold bg-card text-foreground"
                   >
                     {format}
                   </span>
@@ -156,7 +156,7 @@ export function FileUpload({
         </CardContent>
       </Card>
 
-      <div className="text-center text-sm text-[#a0a0b8]">
+      <div className="text-center text-sm text-muted-foreground">
         <p>Your file will be processed securely on the server</p>
       </div>
     </div>

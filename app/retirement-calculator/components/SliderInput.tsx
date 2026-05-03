@@ -25,10 +25,10 @@ export function SliderInput({
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
-        <label className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#5a5a80]">
+        <label className="text-[11px] font-semibold tracking-[0.15em] uppercase text-muted-foreground">
           {label}
         </label>
-        <span className="text-sm font-mono font-semibold text-[#f0f0f8] tabular-nums">
+        <span className="text-sm font-mono font-semibold text-foreground tabular-nums">
           {displayValue}
         </span>
       </div>
@@ -60,11 +60,12 @@ export function SliderInput({
           '[&::-moz-range-thumb]:shadow-[0_0_0_3px_rgba(255,45,120,0.25)]',
         ].join(' ')}
         style={{
-          background: `linear-gradient(to right, #ff2d78 0%, #ff2d78 ${pct}%, #252540 ${pct}%, #252540 100%)`,
+          background: `linear-gradient(to right, #ff2d78 0%, #ff2d78 ${pct}%, var(--color-border) ${pct}%, var(--color-border) 100%)`,
+          // --color-border adapts between light and dark themes
         }}
       />
 
-      <div className="flex justify-between text-[10px] font-mono text-[#404060]">
+      <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
         <span>{format ? format(min) : min}</span>
         <span>{format ? format(max) : max}</span>
       </div>

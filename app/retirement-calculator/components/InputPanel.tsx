@@ -14,11 +14,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-[#1c1c2e]" />
+        <div className="h-px flex-1 bg-border" />
         <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#ff2d78]">
           {title}
         </span>
-        <div className="h-px flex-1 bg-[#1c1c2e]" />
+        <div className="h-px flex-1 bg-border" />
       </div>
       <div className="flex flex-col gap-5">{children}</div>
     </div>
@@ -34,12 +34,12 @@ export function InputPanel({ inputs, onChange }: InputPanelProps) {
           Plan Your
         </p>
         <h1
-          className="text-[28px] font-extrabold leading-none text-[#f0f0f8]"
+          className="text-[28px] font-extrabold leading-none text-foreground"
           style={{ fontFamily: 'var(--font-syne, sans-serif)' }}
         >
           Retirement
         </h1>
-        <p className="text-xs text-[#40405a] mt-1.5">
+        <p className="text-xs text-muted-foreground mt-1.5">
           Will your money last until age {inputs.endAge}?
         </p>
       </div>

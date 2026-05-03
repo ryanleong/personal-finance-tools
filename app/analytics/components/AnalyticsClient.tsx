@@ -55,7 +55,7 @@ export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
   }
 
   return (
-    <div className="bg-[var(--color-app-bg)] text-[var(--color-app-text)] min-h-screen p-6 lg:p-10">
+    <div className="bg-background text-foreground min-h-screen p-6 lg:p-10">
       <h1 className="text-2xl font-semibold mb-8">Analytics</h1>
 
       <div className="container mx-auto grid grid-cols-12 gap-6">
@@ -70,7 +70,7 @@ export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
 
         {/* Data loaded banner */}
         {status === 'loaded' && (
-          <div className="col-span-12 rounded-lg bg-[var(--color-app-surface)] border border-[var(--color-app-border)] px-4 py-3 flex items-center gap-2">
+          <div className="col-span-12 rounded-lg bg-card border border-border px-4 py-3 flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
             <p className="text-sm font-medium">
               Data loaded &mdash;{' '}
@@ -81,7 +81,7 @@ export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
           </div>
         )}
 
-        {/* Filter bar + summary cards + category breakdown — shown once data is loaded */}
+        {/* Filter bar + summary cards + category breakdown â€” shown once data is loaded */}
         {status === 'loaded' && (
           <>
             <div className="col-span-12">
@@ -100,7 +100,7 @@ export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
       {/* Replace data confirmation dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-[var(--color-app-surface)] border border-[var(--color-app-border)] rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+          <div className="bg-card border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
             <h2 className="text-base font-semibold mb-2">Replace data?</h2>
             <p className="text-sm opacity-70 mb-6">
               This will replace your current{' '}
@@ -111,7 +111,7 @@ export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-4 py-2 text-sm font-medium rounded-md border border-[var(--color-app-border)] hover:opacity-80 transition-opacity"
+                className="px-4 py-2 text-sm font-medium rounded-md border border-border hover:opacity-80 transition-opacity"
               >
                 Cancel
               </button>

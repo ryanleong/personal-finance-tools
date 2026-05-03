@@ -172,7 +172,7 @@ export function RetirementChart({
           }}
         />
 
-        {/* CPF start marker — only when retirement is before 65 */}
+        {/* CPF start marker â€” only when retirement is before 65 */}
         {showCpfLine && (
           <ReferenceLine
             x={65}
