@@ -1,4 +1,4 @@
-// Amount sign convention: positive Amt (SGD) = income, negative = expense
+// Amount sign convention: positive Amt = income, negative = expense
 export const INCOME_IS_POSITIVE = true;
 
 // Label used for transactions with no recognised category

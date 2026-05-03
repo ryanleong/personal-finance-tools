@@ -5,7 +5,7 @@ export type ParseCSVResult =
   | { success: true; transactions: Transaction[] }
   | { success: false; error: string };
 
-const REQUIRED_COLUMNS = ['Date', 'Category', 'Notes', 'Account', 'Amt (SGD)'] as const;
+const REQUIRED_COLUMNS = ['Date', 'Category', 'Notes', 'Account', 'Amt'] as const;
 
 function parseDate(value: string): Date | null {
   // Expects DD/MM/YYYY
@@ -46,7 +46,7 @@ export function parseCSV(csvText: string): ParseCSVResult {
     const date = parseDate(String(row['Date'] ?? '').trim());
     if (!date || isNaN(date.getTime())) continue;
 
-    const amountSGD = parseAmount(row['Amt (SGD)']);
+    const amountSGD = parseAmount(row['Amt']);
     if (isNaN(amountSGD)) continue;
 
     const isTransfer: boolean | undefined = hasIsTransfer

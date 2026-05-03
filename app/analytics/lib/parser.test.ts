@@ -8,7 +8,7 @@ function buildCSV(headers: string[], rows: string[][]): string {
   return body.length > 0 ? `${header}\n${body}` : header;
 }
 
-const REQUIRED_HEADERS = ['Date', 'Category', 'Notes', 'Account', 'Amt (SGD)'];
+const REQUIRED_HEADERS = ['Date', 'Category', 'Notes', 'Account', 'Amt'];
 
 describe('parseCSV', () => {
   // 1. Valid CSV with all columns → returns Transaction[] with correct values
@@ -33,19 +33,19 @@ describe('parseCSV', () => {
   // 2. Missing required column → returns error naming the missing column(s)
   it('returns error when one required column is missing', () => {
     const csv = buildCSV(
-      ['Date', 'Category', 'Notes', 'Account'], // missing 'Amt (SGD)'
+      ['Date', 'Category', 'Notes', 'Account'], // missing 'Amt'
       [['01/03/2025', 'Salary', 'pay', 'DBS']],
     );
     const result = parseCSV(csv);
     expect(result.success).toBe(false);
     if (result.success) return;
-    expect(result.error).toContain('Amt (SGD)');
+    expect(result.error).toContain('Amt');
   });
 
   // 3. Multiple missing columns → error lists ALL missing columns
   it('lists all missing columns when multiple are absent', () => {
     const csv = buildCSV(
-      ['Date', 'Category'], // missing Notes, Account, Amt (SGD)
+      ['Date', 'Category'], // missing Notes, Account, Amt
       [['01/03/2025', 'Salary']],
     );
     const result = parseCSV(csv);
@@ -53,7 +53,7 @@ describe('parseCSV', () => {
     if (result.success) return;
     expect(result.error).toContain('Notes');
     expect(result.error).toContain('Account');
-    expect(result.error).toContain('Amt (SGD)');
+    expect(result.error).toContain('Amt');
   });
 
   // 4. DD/MM/YYYY date parsing → Date object with correct year/month/day
