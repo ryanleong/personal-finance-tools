@@ -40,7 +40,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
-      <div className="container mx-auto grid grid-cols-12 h-14 items-center px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto grid grid-cols-12 h-14 items-center px-6 lg:px-0">
         {/* Brand — cols 1–2 on desktop, 1–6 on mobile */}
         <div className="col-span-6 md:col-span-2 flex items-center">
           <Link href="/" className="text-sm font-semibold text-foreground">

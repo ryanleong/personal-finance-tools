@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { CsvFormatterClient } from './components/CsvFormatterClient';
 
 export const metadata: Metadata = {
-  title: 'CSV Formatter â€” Personal Finance Tools',
+  title: 'CSV Formatter | Personal Finance Tools',
 };
 
 function LoadingShell() {

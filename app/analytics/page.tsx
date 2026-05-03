@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { AnalyticsClient } from './components/AnalyticsClient';
 
 export const metadata: Metadata = {
-  title: 'Analytics â€” Personal Finance Tools',
+  title: 'Analytics | Personal Finance Tools',
 };
 
 function LoadingShell() {

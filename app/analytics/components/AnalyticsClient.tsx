@@ -1,21 +1,28 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import type { Transaction } from '../types';
-import { parseCSV } from '../lib/parser';
-import { useAnalyticsData } from '../hooks/useAnalyticsData';
-import { UploadSection } from './UploadSection';
-import { FilterBar } from './FilterBar';
-import { SummaryCards } from './SummaryCards';
-import { CategoryBreakdownSection } from './CategoryBreakdownSection';
+import { useState } from "react";
+import type { Transaction } from "../types";
+import { parseCSV } from "../lib/parser";
+import { useAnalyticsData } from "../hooks/useAnalyticsData";
+import { UploadSection } from "./UploadSection";
+import { FilterBar } from "./FilterBar";
+import { SummaryCards } from "./SummaryCards";
+import { CategoryBreakdownSection } from "./CategoryBreakdownSection";
 
 interface AnalyticsClientProps {
   initialTransactions?: Transaction[];
 }
 
 export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
-  const { transactions, setTransactions, status, filterState, setFilter, availableAccounts, summary } =
-    useAnalyticsData(initialTransactions);
+  const {
+    transactions,
+    setTransactions,
+    status,
+    filterState,
+    setFilter,
+    availableAccounts,
+    summary,
+  } = useAnalyticsData(initialTransactions);
 
   const [parseError, setParseError] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -33,7 +40,7 @@ export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
   }
 
   function handleFileSelect(file: File) {
-    if (status === 'loaded') {
+    if (status === "loaded") {
       setPendingFile(file);
       setShowConfirmDialog(true);
     } else {
@@ -56,36 +63,42 @@ export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
 
   return (
     <div className="bg-background text-foreground min-h-screen p-6 lg:p-10">
-      <h1 className="text-2xl font-semibold mb-8">Analytics</h1>
-
       <div className="container mx-auto grid grid-cols-12 gap-6">
+        <div className="col-span-12">
+          <h1 className="text-2xl font-semibold mb-8">Analytics</h1>
+        </div>
         {/* Upload section always visible at top */}
         <div className="col-span-12">
           <UploadSection
-            isLoaded={status === 'loaded'}
+            isLoaded={status === "loaded"}
             onFileSelect={handleFileSelect}
             error={parseError}
           />
         </div>
 
         {/* Data loaded banner */}
-        {status === 'loaded' && (
+        {status === "loaded" && (
           <div className="col-span-12 rounded-lg bg-card border border-border px-4 py-3 flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
             <p className="text-sm font-medium">
-              Data loaded &mdash;{' '}
+              Data loaded &mdash;{" "}
               <span className="font-normal opacity-70">
-                {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+                {transactions.length} transaction
+                {transactions.length !== 1 ? "s" : ""}
               </span>
             </p>
           </div>
         )}
 
         {/* Filter bar + summary cards + category breakdown â€” shown once data is loaded */}
-        {status === 'loaded' && (
+        {status === "loaded" && (
           <>
             <div className="col-span-12">
-              <FilterBar filterState={filterState} onFilterChange={setFilter} availableAccounts={availableAccounts} />
+              <FilterBar
+                filterState={filterState}
+                onFilterChange={setFilter}
+                availableAccounts={availableAccounts}
+              />
             </div>
             <div className="col-span-12">
               <SummaryCards summary={summary} />
@@ -103,9 +116,9 @@ export function AnalyticsClient({ initialTransactions }: AnalyticsClientProps) {
           <div className="bg-card border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
             <h2 className="text-base font-semibold mb-2">Replace data?</h2>
             <p className="text-sm opacity-70 mb-6">
-              This will replace your current{' '}
-              {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} with the
-              new file. This cannot be undone.
+              This will replace your current {transactions.length} transaction
+              {transactions.length !== 1 ? "s" : ""} with the new file. This
+              cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button

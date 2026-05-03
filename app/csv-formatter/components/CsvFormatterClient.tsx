@@ -31,7 +31,7 @@ export function CsvFormatterClient() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
+      <main className="flex-1 container grid mx-auto px-6 lg:px-0 py-10">
         {/* Error Display */}
         {error && (
           <Alert variant="destructive" className="max-w-2xl mx-auto mb-8 animate-in fade-in slide-in-from-top-4">
@@ -54,7 +54,7 @@ export function CsvFormatterClient() {
         )}
 
         {/* Step Content */}
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto w-full">
           {currentStep === 'upload' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <FileUpload onFileSelect={handleFileSelect} />

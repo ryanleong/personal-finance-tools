@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { RetirementCalculatorClient } from './components/RetirementCalculatorClient';
 
 export const metadata: Metadata = {
-  title: 'Retirement Calculator â€” Personal Finance Tools',
+  title: 'Retirement Calculator | Personal Finance Tools',
 };
 
 function LoadingShell() {
