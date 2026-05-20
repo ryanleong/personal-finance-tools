@@ -12,6 +12,8 @@ const base: RetirementInputs = {
   growthRate: 7,
   inflationRate: 3,
   cpfPayoutLevel: 'none',
+  conservativeAge: 55,
+  conservativeGrowthRate: 4,
 };
 
 describe('applyInputConstraints', () => {
@@ -44,5 +46,34 @@ describe('applyInputConstraints', () => {
     // retirementAge explicitly set to 110, endAge is 100 → must clamp to 100
     const result = applyInputConstraints(base, { retirementAge: 110 });
     expect(result.retirementAge).toBe(100);
+  });
+});
+
+describe('applyInputConstraints: conservativeAge clamping', () => {
+  it('no-op: returns conservativeAge unchanged when within [currentAge, endAge]', () => {
+    const result = applyInputConstraints(base, { conservativeAge: 55 });
+    expect(result.conservativeAge).toBe(55);
+  });
+
+  it('conservativeAge set below currentAge: clamps up to currentAge', () => {
+    const result = applyInputConstraints(base, { conservativeAge: 20 });
+    expect(result.conservativeAge).toBe(base.currentAge);
+  });
+
+  it('conservativeAge set above endAge: clamps down to endAge', () => {
+    const result = applyInputConstraints(base, { conservativeAge: 120 });
+    expect(result.conservativeAge).toBe(base.endAge);
+  });
+
+  it('currentAge raised beyond conservativeAge: conservativeAge clamps up to new currentAge', () => {
+    // conservativeAge=55 but currentAge jumps to 60 → conservativeAge must clamp to 60
+    const result = applyInputConstraints(base, { currentAge: 60 });
+    expect(result.conservativeAge).toBe(60);
+  });
+
+  it('endAge lowered below conservativeAge: conservativeAge clamps down to new endAge', () => {
+    // conservativeAge=55 but endAge drops to 50 → conservativeAge must clamp to 50
+    const result = applyInputConstraints(base, { endAge: 50 });
+    expect(result.conservativeAge).toBe(50);
   });
 });

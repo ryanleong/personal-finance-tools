@@ -14,7 +14,9 @@ export function useInputState(initialInputs?: RetirementInputs): UseInputStateRe
   useEffect(() => {
     loadInputs().then((saved) => {
       if (saved !== null) {
-        setInputsState(saved);
+        // Merge with DEFAULT_INPUTS so any fields absent from old stored objects
+        // (e.g. conservativeAge added in a later release) get sensible defaults.
+        setInputsState({ ...DEFAULT_INPUTS, ...saved });
       }
     });
   }, []);

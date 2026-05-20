@@ -45,6 +45,9 @@ export function RetirementCalculatorClient({ initialInputs }: RetirementCalculat
             currentAge={inputs.currentAge}
             endAge={inputs.endAge}
             cpfPayoutLevel={inputs.cpfPayoutLevel}
+            conservativeAge={inputs.conservativeAge}
+            conservativeGrowthRate={inputs.conservativeGrowthRate}
+            growthRate={inputs.growthRate}
           />
         </div>
 

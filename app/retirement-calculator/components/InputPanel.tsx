@@ -104,6 +104,22 @@ export function InputPanel({ inputs, onChange }: InputPanelProps) {
           onChange={(v) => onChange({ growthRate: v })}
         />
         <SliderInput
+          label="Conservative Switch Age"
+          value={inputs.conservativeAge}
+          min={inputs.currentAge}
+          max={inputs.endAge}
+          onChange={(v) => onChange({ conservativeAge: v })}
+        />
+        <SliderInput
+          label="Conservative Growth Rate"
+          value={inputs.conservativeGrowthRate}
+          min={0}
+          max={40}
+          step={0.5}
+          format={(v) => `${v.toFixed(1)}%`}
+          onChange={(v) => onChange({ conservativeGrowthRate: v })}
+        />
+        <SliderInput
           label="Inflation Rate"
           value={inputs.inflationRate}
           min={0}

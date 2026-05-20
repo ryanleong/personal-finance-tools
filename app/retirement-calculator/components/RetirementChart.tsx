@@ -19,6 +19,9 @@ interface RetirementChartProps {
   currentAge: number;
   endAge: number;
   cpfPayoutLevel: CPFPayoutLevel;
+  conservativeAge: number;
+  conservativeGrowthRate: number;
+  growthRate: number;
 }
 
 const LINE_COLOR_SUCCESS = '#00e5a0';
@@ -97,6 +100,9 @@ export function RetirementChart({
   currentAge,
   endAge,
   cpfPayoutLevel,
+  conservativeAge,
+  conservativeGrowthRate,
+  growthRate,
 }: RetirementChartProps) {
   const lineColor = isSuccessful ? LINE_COLOR_SUCCESS : LINE_COLOR_FAIL;
 
@@ -109,6 +115,8 @@ export function RetirementChart({
 
   // Show CPF reference line only when retirement is before 65 and CPF is selected
   const showCpfLine = cpfPayoutLevel !== 'none' && retirementAge < 65;
+  // Show glide-path marker only when the conservative rate differs from the growth rate
+  const showGlideLine = conservativeGrowthRate !== growthRate;
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -188,7 +196,22 @@ export function RetirementChart({
             }}
           />
         )}
-
+        {/* Glide-path marker – only when the conservative rate differs */}
+        {showGlideLine && (
+          <ReferenceLine
+            x={conservativeAge}
+            stroke="#4fa6ff"
+            strokeDasharray="4 3"
+            strokeWidth={1.5}
+            label={{
+              value: `Rate @ ${conservativeAge}`,
+              fill: '#4fa6ff',
+              fontSize: 10,
+              position: 'insideTopLeft',
+              fontFamily: 'var(--font-jetbrains, monospace)',
+            }}
+          />
+        )}
         <Area
           type="monotone"
           dataKey="balance"

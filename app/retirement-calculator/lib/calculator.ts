@@ -18,9 +18,10 @@ function runSimulation(inputs: RetirementInputs): { depletionAge: number | null;
     growthRate,
     inflationRate,
     cpfPayoutLevel,
+    conservativeAge,
+    conservativeGrowthRate,
   } = inputs;
 
-  const growth = growthRate / 100;
   const inflation = inflationRate / 100;
   const cpfAnnual = CPF_MONTHLY_PAYOUTS[cpfPayoutLevel] * 12;
 
@@ -32,6 +33,8 @@ function runSimulation(inputs: RetirementInputs): { depletionAge: number | null;
   dataPoints.push({ age: currentAge, balance, contribution: 0, growthAmount: 0, expenditure: 0, cpfPayout: 0 });
 
   for (let age = currentAge + 1; age <= endAge; age++) {
+    // Use the conservative rate once the glide-path switch age is reached
+    const growth = (age >= conservativeAge ? conservativeGrowthRate : growthRate) / 100;
     const growthAmount = balance * growth;
 
     if (age <= retirementAge) {

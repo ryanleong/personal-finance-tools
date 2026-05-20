@@ -10,6 +10,10 @@ export interface RetirementInputs {
   growthRate: number; // percentage, e.g. 7 for 7%
   inflationRate: number; // percentage, e.g. 3 for 3%
   cpfPayoutLevel: CPFPayoutLevel;
+  /** Age at which the portfolio switches to conservativeGrowthRate. */
+  conservativeAge: number;
+  /** Growth rate (%) applied from conservativeAge onward — the glide-path rate. */
+  conservativeGrowthRate: number;
 }
 
 export interface DataPoint {
@@ -61,4 +65,6 @@ export const DEFAULT_INPUTS: RetirementInputs = {
   growthRate: 7,
   inflationRate: 3,
   cpfPayoutLevel: 'none',
+  conservativeAge: 55,
+  conservativeGrowthRate: 4,
 };

@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { calculate } from './calculator';
 import type { RetirementInputs } from '../types';
 
+/** Glide-path defaults that keep the switch disabled in legacy tests (age 200 is beyond any test's endAge). */
+const noGlide = { conservativeAge: 200, conservativeGrowthRate: 4 } as const;
+
 // Slice 1: dataPoints array length
 
 describe('dataPoints length', () => {
@@ -16,6 +19,7 @@ describe('dataPoints length', () => {
       growthRate: 7,
       inflationRate: 3,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const { dataPoints } = calculate(inputs);
     expect(dataPoints).toHaveLength(35 - 30 + 1); // 6: ages 30–35
@@ -39,6 +43,7 @@ describe('accumulation phase', () => {
       growthRate: 10,
       inflationRate: 3,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const { dataPoints } = calculate(inputs);
     expect(dataPoints[0]).toMatchObject({ age: 30, balance: 10000 });
@@ -57,6 +62,7 @@ describe('accumulation phase', () => {
       growthRate: 5,
       inflationRate: 2,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const { dataPoints } = calculate(inputs);
     expect(dataPoints[0]).toMatchObject({ age: 45, balance: 250000 });
@@ -78,6 +84,7 @@ describe('decumulation phase', () => {
       growthRate: 0,
       inflationRate: 0,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const { dataPoints } = calculate(inputs);
     expect(dataPoints[1].balance).toBeCloseTo(480000);
@@ -96,6 +103,7 @@ describe('decumulation phase', () => {
       growthRate: 0,
       inflationRate: 10,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const { dataPoints } = calculate(inputs);
     expect(dataPoints[1].balance).toBeCloseTo(480000); // 500000 - 20000*(1.1^0)
@@ -115,6 +123,7 @@ describe('decumulation phase', () => {
       growthRate: 10,
       inflationRate: 0,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const { dataPoints } = calculate(inputs);
     expect(dataPoints[1].balance).toBeCloseTo(100000); // 100000*1.1 - 10000 = 100000
@@ -134,6 +143,7 @@ describe('CPF payouts', () => {
     growthRate: 0,
     inflationRate: 0,
     cpfPayoutLevel: 'full', // full = 1780/mo = 21360/yr
+    ...noGlide,
   };
 
   it('adds 0 CPF payout before age 65', () => {
@@ -197,6 +207,7 @@ describe('isSuccessful and depletionAge', () => {
       growthRate: 0,
       inflationRate: 0,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const result = calculate(inputs);
     expect(result.isSuccessful).toBe(true);
@@ -218,6 +229,7 @@ describe('isSuccessful and depletionAge', () => {
       growthRate: 0,
       inflationRate: 0,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const result = calculate(inputs);
     expect(result.depletionAge).toBe(62);
@@ -236,6 +248,7 @@ describe('isSuccessful and depletionAge', () => {
       growthRate: 0,
       inflationRate: 0,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const { depletionAge } = calculate(inputs);
     expect(depletionAge).toBe(62);
@@ -255,6 +268,7 @@ describe('per-year breakdown fields', () => {
     growthRate: 10,
     inflationRate: 5,
     cpfPayoutLevel: 'none',
+    ...noGlide,
   };
 
   it('accumulation year: contribution equals monthlyContribution * 12', () => {
@@ -332,6 +346,7 @@ describe('per-year breakdown fields', () => {
       growthRate: 0,
       inflationRate: 0,
       cpfPayoutLevel: 'full',
+      ...noGlide,
     };
     const { dataPoints } = calculate(inputs);
     const age64 = dataPoints.find((p) => p.age === 64)!;
@@ -349,6 +364,7 @@ describe('per-year breakdown fields', () => {
       growthRate: 0,
       inflationRate: 0,
       cpfPayoutLevel: 'full', // 1780/mo * 12 = 21360/yr
+      ...noGlide,
     };
     const { dataPoints } = calculate(inputs);
     const age65 = dataPoints.find((p) => p.age === 65)!;
@@ -369,6 +385,7 @@ describe('additionalYearsToSuccess', () => {
     growthRate: 7,
     inflationRate: 3,
     cpfPayoutLevel: 'none',
+    ...noGlide,
   };
 
   // A plan that fails with retirementAge=55 but can be fixed within 20 years
@@ -384,6 +401,7 @@ describe('additionalYearsToSuccess', () => {
     growthRate: 7,
     inflationRate: 3,
     cpfPayoutLevel: 'none',
+    ...noGlide,
   };
 
   it('returns additionalYearsToSuccess=null when plan is already successful', () => {
@@ -436,6 +454,7 @@ describe('additionalYearsToSuccess', () => {
       growthRate: 3,
       inflationRate: 3,
       cpfPayoutLevel: 'none',
+      ...noGlide,
     };
     const result = calculate(impossibleInputs);
     expect(result.maxYearsExceeded).toBe(true);
@@ -446,5 +465,98 @@ describe('additionalYearsToSuccess', () => {
   it('sets maxYearsExceeded=false when a solution is found within 20 years', () => {
     const result = calculate(failInputs);
     expect(result.maxYearsExceeded).toBe(false);
+  });
+});
+
+// Glide-path: dual rate of return
+describe('glide-path: conservativeAge rate switch', () => {
+  /**
+   * Base: growthRate=10, conservativeGrowthRate=5, conservativeAge=32.
+   * currentAge=30, retirementAge=35, endAge=35, no contributions, no spending.
+   * Ages 30-31: growth at 10%; age 32-35: growth at 5%.
+   *
+   * Expected balances (starting 10000):
+   *   age 30: 10000
+   *   age 31: 10000 * 1.10 = 11000       (rate = 10%)
+   *   age 32: 11000 * 1.05 = 11550       (rate = 5%, switch happens here)
+   *   age 33: 11550 * 1.05 = 12127.5
+   */
+  const switchInputs: RetirementInputs = {
+    currentAge: 30,
+    retirementAge: 35,
+    endAge: 35,
+    currentInvestedAmount: 10_000,
+    monthlyContribution: 0,
+    annualSpending: 0,
+    growthRate: 10,
+    inflationRate: 0,
+    cpfPayoutLevel: 'none',
+    conservativeAge: 32,
+    conservativeGrowthRate: 5,
+  };
+
+  it('uses growthRate before conservativeAge is reached', () => {
+    const { dataPoints } = calculate(switchInputs);
+    const age31 = dataPoints.find((p) => p.age === 31)!;
+    // 10000 * 1.10 = 11000
+    expect(age31.balance).toBeCloseTo(11_000);
+  });
+
+  it('switches to conservativeGrowthRate at conservativeAge', () => {
+    const { dataPoints } = calculate(switchInputs);
+    const age32 = dataPoints.find((p) => p.age === 32)!;
+    // 11000 * 1.05 = 11550
+    expect(age32.balance).toBeCloseTo(11_550);
+  });
+
+  it('continues using conservativeGrowthRate after the switch', () => {
+    const { dataPoints } = calculate(switchInputs);
+    const age33 = dataPoints.find((p) => p.age === 33)!;
+    // 11550 * 1.05 = 12127.5
+    expect(age33.balance).toBeCloseTo(12_127.5);
+  });
+
+  it('switch during accumulation phase works correctly', () => {
+    // conservativeAge=32 < retirementAge=35: switch happens mid-accumulation
+    const { dataPoints } = calculate(switchInputs);
+    const age32 = dataPoints.find((p) => p.age === 32)!;
+    expect(age32.contribution).toBeCloseTo(0); // monthlyContribution=0
+    expect(age32.balance).toBeCloseTo(11_550);
+  });
+
+  it('switch during decumulation phase works correctly', () => {
+    // retirementAge=30 (start immediately), conservativeAge=32 hits in decumulation
+    // growthRate=10 for age 31, conservativeGrowthRate=5 for age 32+
+    // age 30: 10000, spending=1000/yr, n=age-retirementAge-1
+    // age 31 (n=0): 10000*1.10 - 1000 = 10000  (growthRate=10%)
+    // age 32 (n=1): 10000*1.05 - 1000 = 9500   (conservativeGrowthRate=5%)
+    const deculInputs: RetirementInputs = {
+      currentAge: 30,
+      retirementAge: 30,
+      endAge: 32,
+      currentInvestedAmount: 10_000,
+      monthlyContribution: 0,
+      annualSpending: 1_000,
+      growthRate: 10,
+      inflationRate: 0,
+      cpfPayoutLevel: 'none',
+      conservativeAge: 32,
+      conservativeGrowthRate: 5,
+    };
+    const { dataPoints } = calculate(deculInputs);
+    const age31 = dataPoints.find((p) => p.age === 31)!;
+    const age32 = dataPoints.find((p) => p.age === 32)!;
+    expect(age31.balance).toBeCloseTo(10_000); // 10000*1.10 - 1000
+    expect(age32.balance).toBeCloseTo(9_500);  // 10000*1.05 - 1000
+  });
+
+  it('produces identical results to single-rate when conservativeGrowthRate equals growthRate', () => {
+    const singleRate: RetirementInputs = { ...switchInputs, conservativeGrowthRate: 10 };
+    const noSwitchInputs: RetirementInputs = { ...switchInputs, conservativeAge: 200 };
+    const { dataPoints: withSwitch } = calculate(singleRate);
+    const { dataPoints: withoutSwitch } = calculate(noSwitchInputs);
+    withSwitch.forEach((pt, i) => {
+      expect(pt.balance).toBeCloseTo(withoutSwitch[i].balance);
+    });
   });
 });
