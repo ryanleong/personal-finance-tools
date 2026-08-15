@@ -2,47 +2,46 @@ import { renderHook, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useInputState } from './useInputState';
 import { DEFAULT_INPUTS, type RetirementInputs } from '../types';
-import * as storage from '../lib/storage';
 
-vi.mock('../lib/storage', () => ({
-  loadInputs: vi.fn().mockResolvedValue(null),
-  saveInputs: vi.fn().mockResolvedValue(undefined),
+const mockSearchParams = { current: new URLSearchParams() };
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => mockSearchParams.current,
 }));
-
-const savedInputs: RetirementInputs = {
-  ...DEFAULT_INPUTS,
-  currentAge: 40,
-  retirementAge: 65,
-};
 
 describe('useInputState', () => {
   beforeEach(() => {
-    vi.mocked(storage.loadInputs).mockResolvedValue(null);
+    mockSearchParams.current = new URLSearchParams();
   });
 
-  it('starts with DEFAULT_INPUTS before async load', () => {
+  it('starts with DEFAULT_INPUTS when the URL has no params', () => {
     const { result } = renderHook(() => useInputState());
     expect(result.current.inputs).toEqual(DEFAULT_INPUTS);
   });
 
-  it('replaces state with IndexedDB value on mount', async () => {
-    vi.mocked(storage.loadInputs).mockResolvedValue(savedInputs);
+  it('hydrates from URL search params on mount', () => {
+    mockSearchParams.current = new URLSearchParams('currentAge=40&retirementAge=65');
     const { result } = renderHook(() => useInputState());
-    expect(result.current.inputs).toEqual(DEFAULT_INPUTS);
-    await act(async () => {});
-    expect(result.current.inputs).toEqual(savedInputs);
+    expect(result.current.inputs).toEqual({ ...DEFAULT_INPUTS, currentAge: 40, retirementAge: 65 });
   });
 
-  it('setInputs applies applyInputConstraints', async () => {
+  it('applies constraints to values hydrated from the URL', () => {
+    mockSearchParams.current = new URLSearchParams('currentAge=70');
     const { result } = renderHook(() => useInputState());
-    await act(async () => {});
+    // retirementAge default (65) is below currentAge (70) → must clamp up
+    expect(result.current.inputs.retirementAge).toBe(70);
+  });
+
+  it('setInputs applies applyInputConstraints', () => {
+    const { result } = renderHook(() => useInputState());
     act(() => {
       result.current.setInputs({ currentAge: 50, retirementAge: 40 });
     });
     expect(result.current.inputs.retirementAge).toBe(50);
   });
 
-  it('accepts initialInputs override as starting value', () => {
+  it('accepts initialInputs override as starting value, ignoring the URL', () => {
+    mockSearchParams.current = new URLSearchParams('currentAge=99');
     const custom: RetirementInputs = { ...DEFAULT_INPUTS, currentAge: 45 };
     const { result } = renderHook(() => useInputState(custom));
     expect(result.current.inputs.currentAge).toBe(45);

@@ -1,19 +1,15 @@
 import { renderHook, act } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 import { useRetirementData } from './useRetirementData';
 import { DEFAULT_INPUTS } from '../types';
-import * as storage from '../lib/storage';
 
-vi.mock('../lib/storage', () => ({
-  loadInputs: vi.fn().mockResolvedValue(null),
-  saveInputs: vi.fn().mockResolvedValue(undefined),
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => '/retirement-calculator',
 }));
 
 describe('useRetirementData', () => {
-  beforeEach(() => {
-    vi.mocked(storage.loadInputs).mockResolvedValue(null);
-  });
-
   it('returns inputs, setInputs, result shape', () => {
     const { result } = renderHook(() => useRetirementData());
     expect(result.current).toHaveProperty('inputs');
