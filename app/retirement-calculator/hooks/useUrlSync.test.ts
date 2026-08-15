@@ -3,40 +3,36 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useUrlSync } from './useUrlSync';
 import { DEFAULT_INPUTS } from '../types';
 
-const replace = vi.fn();
-
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace }),
-  usePathname: () => '/retirement-calculator',
-}));
-
 describe('useUrlSync', () => {
+  const replaceState = vi.spyOn(window.history, 'replaceState');
+
   beforeEach(() => {
     vi.useFakeTimers();
-    replace.mockClear();
+    replaceState.mockClear();
+    window.history.pushState({}, '', '/retirement-calculator');
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('does not call replace before the debounce window elapses', () => {
+  it('does not call replaceState before the debounce window elapses', () => {
     renderHook(() => useUrlSync(DEFAULT_INPUTS));
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceState).not.toHaveBeenCalled();
   });
 
   it('replaces with a bare pathname when inputs match defaults', async () => {
     renderHook(() => useUrlSync(DEFAULT_INPUTS));
     await vi.advanceTimersByTimeAsync(300);
-    expect(replace).toHaveBeenCalledWith('/retirement-calculator', { scroll: false });
-    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/retirement-calculator');
+    expect(replaceState).toHaveBeenCalledTimes(1);
   });
 
   it('replaces with a query string reflecting non-default inputs', async () => {
     const inputs = { ...DEFAULT_INPUTS, currentAge: 35 };
     renderHook(() => useUrlSync(inputs));
     await vi.advanceTimersByTimeAsync(300);
-    expect(replace).toHaveBeenCalledWith('/retirement-calculator?currentAge=35', { scroll: false });
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/retirement-calculator?currentAge=35');
   });
 
   it('cancels pending replace when inputs change before the debounce window', async () => {
@@ -46,9 +42,21 @@ describe('useUrlSync', () => {
     await vi.advanceTimersByTimeAsync(150);
     const updated = { ...DEFAULT_INPUTS, currentAge: 35 };
     rerender({ inputs: updated });
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceState).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(300);
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith('/retirement-calculator?currentAge=35', { scroll: false });
+    expect(replaceState).toHaveBeenCalledTimes(1);
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/retirement-calculator?currentAge=35');
+  });
+
+  it('syncs subsequent updates when the page already loaded with existing query params', async () => {
+    window.history.pushState({}, '', '/retirement-calculator?currentAge=40&retirementAge=65');
+    const inputs = { ...DEFAULT_INPUTS, currentAge: 40, growthRate: 9 };
+    renderHook(() => useUrlSync(inputs));
+    await vi.advanceTimersByTimeAsync(300);
+    expect(replaceState).toHaveBeenCalledWith(
+      null,
+      '',
+      '/retirement-calculator?currentAge=40&growthRate=9',
+    );
   });
 });
