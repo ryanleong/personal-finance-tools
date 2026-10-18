@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logout } from '@/app/login/actions';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -61,6 +62,9 @@ export function Navbar() {
           <div className="hidden md:flex">
             <ThemeSwitcher />
           </div>
+          <form action={logout}>
+            <Button type="submit" variant="ghost" size="sm">Sign out</Button>
+          </form>
           {/* Mobile: hamburger */}
           <div className="flex md:hidden">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
