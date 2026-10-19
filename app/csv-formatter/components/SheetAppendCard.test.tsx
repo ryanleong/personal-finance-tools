@@ -9,6 +9,11 @@ const base: SheetAppendCardProps = {
   appendStatus: 'idle',
   appendError: null,
   previewRows: [{ date: '01/02/2025', description: 'Coffee', amount: -3.5 }],
+  duplicateStatus: 'ready',
+  duplicateError: null,
+  duplicates: [false],
+  excluded: new Set<number>(),
+  onToggleRow: vi.fn(),
   onTabSelect: vi.fn(),
   onAppend: vi.fn(),
   onReset: vi.fn(),
@@ -43,5 +48,25 @@ describe('SheetAppendCard', () => {
     render(<SheetAppendCard {...base} appendStatus="error" appendError="Boom" />);
     expect(screen.getByText('Boom')).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Append to Sheet' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('shows every row, marks duplicates unticked, and reports the counts', async () => {
+    const onToggleRow = vi.fn();
+    const previewRows = Array.from({ length: 12 }, (_, i) => ({ date: '01/02/2025', description: `Row ${i}`, amount: -1 }));
+    const duplicates = previewRows.map((_, i) => i === 3);
+    render(<SheetAppendCard {...base} previewRows={previewRows} duplicates={duplicates} excluded={new Set([3])} onToggleRow={onToggleRow} />);
+    expect(screen.getAllByRole('checkbox')).toHaveLength(12);
+    expect((screen.getByLabelText('Include row 4') as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByText(/11 new, 1 duplicate /)).toBeTruthy();
+    await userEvent.click(screen.getByLabelText('Include row 4'));
+    expect(onToggleRow).toHaveBeenCalledWith(3);
+  });
+
+  it('blocks append while checking or when every row is excluded', () => {
+    const { rerender } = render(<SheetAppendCard {...base} duplicateStatus="checking" />);
+    const btn = () => screen.getByRole('button', { name: 'Append to Sheet' }) as HTMLButtonElement;
+    expect(btn().disabled).toBe(true);
+    rerender(<SheetAppendCard {...base} excluded={new Set([0])} />);
+    expect(btn().disabled).toBe(true);
   });
 });

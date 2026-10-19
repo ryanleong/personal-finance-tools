@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { FormattedRow } from '@/lib/services/formatter';
 
+export type DuplicateStatus = 'idle' | 'checking' | 'ready' | 'error';
+
 export type AppendStatus = 'idle' | 'appending' | 'done' | 'error';
 
 export interface SheetTarget {
@@ -22,12 +24,17 @@ export interface SheetAppendCardProps {
   appendStatus: AppendStatus;
   appendError: string | null;
   previewRows: FormattedRow[];
+  duplicateStatus: DuplicateStatus;
+  duplicateError: string | null;
+  /** Per preview row: already in the tab. */
+  duplicates: boolean[];
+  /** Indexes of preview rows that will not be appended. */
+  excluded: Set<number>;
+  onToggleRow: (index: number) => void;
   onTabSelect: (tab: string) => void;
   onAppend: () => void;
   onReset: () => void;
 }
-
-const PREVIEW_LIMIT = 10;
 
 export function SheetAppendCard({
   sheetTarget,
@@ -35,6 +42,11 @@ export function SheetAppendCard({
   appendStatus,
   appendError,
   previewRows,
+  duplicateStatus,
+  duplicateError,
+  duplicates,
+  excluded,
+  onToggleRow,
   onTabSelect,
   onAppend,
   onReset,
@@ -42,7 +54,15 @@ export function SheetAppendCard({
   const { title, tabs, tabGids, sheetUrl, status } = sheetTarget;
   const gid = selectedTab ? tabGids?.[selectedTab] : undefined;
   const openUrl = sheetUrl && gid !== undefined ? `${sheetUrl}#gid=${gid}` : sheetUrl;
-  const canAppend = status === 'ready' && !!selectedTab && appendStatus !== 'appending' && appendStatus !== 'done';
+  const appendCount = previewRows.length - excluded.size;
+  const duplicateCount = duplicates.filter(Boolean).length;
+  const canAppend =
+    status === 'ready' &&
+    !!selectedTab &&
+    duplicateStatus === 'ready' &&
+    appendCount > 0 &&
+    appendStatus !== 'appending' &&
+    appendStatus !== 'done';
 
   return (
     <Card className="border-green-700/50 bg-green-900/20">
@@ -84,12 +104,20 @@ export function SheetAppendCard({
             </Button>
           </div>
 
+          {duplicateStatus === 'checking' && <p className="text-sm text-muted-foreground">Checking for duplicates...</p>}
+          {duplicateStatus === 'error' && <p role="alert" className="text-sm text-red-400">{duplicateError}</p>}
+          {duplicateStatus === 'ready' && (
+            <p className="text-sm text-muted-foreground">
+              {previewRows.length - duplicateCount} new, {duplicateCount} duplicate{duplicateCount === 1 ? '' : 's'} (duplicates are unticked)
+            </p>
+          )}
+
           {appendStatus === 'error' && appendError && (
             <p role="alert" className="text-sm text-red-400">{appendError}</p>
           )}
           {appendStatus === 'done' && (
             <p className="text-sm text-green-400">
-              Appended {previewRows.length} rows to {selectedTab}.{' '}
+              Appended {appendCount} rows to {selectedTab}.{' '}
               {openUrl && (
                 <a href={openUrl}target="_blank" rel="noopener noreferrer" className="underline">Open sheet</a>
               )}
@@ -102,9 +130,11 @@ export function SheetAppendCard({
             <div className="bg-background px-4 py-2 border-b border-border text-xs font-medium text-muted-foreground">
               Preview
             </div>
+            <div className="max-h-96 overflow-y-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
+                  <TableHead className="w-8" />
                   <TableHead className="text-xs text-foreground">Date</TableHead>
                   <TableHead className="text-xs text-foreground">Category</TableHead>
                   <TableHead className="text-xs text-foreground">Description</TableHead>
@@ -113,8 +143,17 @@ export function SheetAppendCard({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {previewRows.slice(0, PREVIEW_LIMIT).map((row, i) => (
-                  <TableRow key={i}>
+                {previewRows.map((row, i) => (
+                  <TableRow key={i} className={duplicates[i] ? 'text-muted-foreground' : undefined}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        aria-label={`Include row ${i + 1}`}
+                        checked={!excluded.has(i)}
+                        disabled={duplicateStatus !== 'ready' || appendStatus === 'done'}
+                        onChange={() => onToggleRow(i)}
+                      />
+                    </TableCell>
                     <TableCell className="text-xs font-mono text-foreground">{row.date}</TableCell>
                     <TableCell className="text-xs text-foreground"></TableCell>
                     <TableCell className="text-xs max-w-[240px] truncate text-foreground">{row.description}</TableCell>
@@ -126,11 +165,7 @@ export function SheetAppendCard({
                 ))}
               </TableBody>
             </Table>
-            {previewRows.length > PREVIEW_LIMIT && (
-              <div className="px-4 py-2 border-t border-border text-xs text-muted-foreground text-center">
-                Showing {PREVIEW_LIMIT} of {previewRows.length} rows
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </CardContent>

@@ -22,6 +22,8 @@ export interface SheetsGateway {
   /** `tabGids` maps tab title to its numeric sheetId, used for `#gid=` deep links. */
   listTabs(): Promise<{ title: string; tabs: string[]; tabGids: Record<string, number> }>;
   appendRows(tab: string, values: (string | number)[][]): Promise<void>;
+  /** Columns A:H as displayed; Sheets omits trailing blank cells. */
+  readRows(tab: string): Promise<string[][]>;
 }
 
 export type SheetsClient = sheets_v4.Sheets;
@@ -111,10 +113,21 @@ export function createSheetsGateway(opts: Options = {}): SheetsGateway {
         tabGids: Object.fromEntries(props.filter((p) => p!.sheetId != null).map((p) => [p!.title!, p!.sheetId!])),
       };
     },
+    async readRows(tab) {
+      const res = await call(() =>
+        client.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: `'${tab.replace(/'/g, "''")}'!A:H`,
+          valueRenderOption: 'FORMATTED_VALUE',
+        })
+      );
+      return (res.data.values ?? []) as string[][];
+    },
     async appendRows(tab, values) {
       await call(() =>
         client.spreadsheets.values.append({
           spreadsheetId: sheetId,
+          // The range only anchors where Sheets finds the table; widening it to H let other data in H/F/G shift the start column.
           range: `'${tab.replace(/'/g, "''")}'!A:E`,
           valueInputOption: 'USER_ENTERED',
           insertDataOption: 'INSERT_ROWS',

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const gateway = { listTabs: vi.fn(), appendRows: vi.fn() };
+const gateway = { listTabs: vi.fn(), appendRows: vi.fn(), readRows: vi.fn() };
 const createSheetsGateway = vi.fn();
 
 vi.mock('@/lib/services/sheets', async (orig) => ({
@@ -14,7 +14,8 @@ vi.mock('@/lib/rate-limiter', () => ({
 }));
 vi.mock('next/headers', () => ({ headers: vi.fn(async () => new Headers()) }));
 
-import { getSheetTargetAction, appendToSheetAction } from './actions';
+import { getSheetTargetAction, appendToSheetAction, checkDuplicatesAction } from './actions';
+import { fingerprintRows } from '@/lib/services/fingerprint';
 import { processRateLimiter } from '@/lib/rate-limiter';
 import { SheetsError, type SheetsErrorKind } from '@/lib/services/sheets';
 
@@ -88,8 +89,24 @@ describe('appendToSheetAction', () => {
     const r = await appendToSheetAction('Jan', rows);
     expect(r).toEqual({ success: true, rowCount: 1 });
     expect(gateway.appendRows).toHaveBeenCalledWith('Jan', [
-      ['01/02/2024', '', 'Coffee', '', '-4.50'],
+      ['01/02/2024', '', 'Coffee', '', '-4.50', '', '', expect.stringMatching(/^[0-9a-f]{16}$/)],
     ]);
+  });
+
+  it('skips excluded rows but keeps fingerprints numbered over the whole file', async () => {
+    const two = [rows[0], rows[0]];
+    const r = await appendToSheetAction('Jan', two, [0]);
+    expect(r).toEqual({ success: true, rowCount: 1 });
+    const [, second] = fingerprintRows(two.map(() => ['01/02/2024', '', 'Coffee', '', '-4.50']));
+    expect(gateway.appendRows.mock.calls[0][1]).toEqual([
+      ['01/02/2024', '', 'Coffee', '', '-4.50', '', '', second],
+    ]);
+  });
+
+  it('refuses to append when every row is excluded', async () => {
+    const r = await appendToSheetAction('Jan', rows, [0]);
+    expect(r.success).toBe(false);
+    expect(gateway.appendRows).not.toHaveBeenCalled();
   });
 
   it.each<[SheetsErrorKind, string]>([
@@ -116,5 +133,31 @@ describe('appendToSheetAction', () => {
     const r = await appendToSheetAction('Jan', rows);
     expect(r.success).toBe(false);
     expect(JSON.stringify(r)).not.toContain(SECRET_ID);
+  });
+});
+
+describe('checkDuplicatesAction', () => {
+  const [fp] = fingerprintRows([['01/02/2024', '', 'Coffee', '', '-4.50']]);
+
+  it('flags rows whose fingerprint is stored in the tab', async () => {
+    gateway.readRows.mockResolvedValue([['01/02/2024', '', 'Coffee', '', '-4.50', '', '', fp]]);
+    const other = { date: '02/02/2024', description: 'Lunch', amount: -9 };
+    expect(await checkDuplicatesAction('Jan', [rows[0], other])).toEqual({ success: true, duplicates: [true, false] });
+  });
+
+  it('recognises legacy rows that have no stored fingerprint', async () => {
+    gateway.readRows.mockResolvedValue([['01/02/2024', '', 'Coffee', '', '-4.5']]);
+    expect((await checkDuplicatesAction('Jan', rows)).duplicates).toEqual([true]);
+  });
+
+  it('rejects an unknown tab without reading it', async () => {
+    const r = await checkDuplicatesAction('Nope', rows);
+    expect(r.success).toBe(false);
+    expect(gateway.readRows).not.toHaveBeenCalled();
+  });
+
+  it('maps gateway errors', async () => {
+    gateway.readRows.mockRejectedValue(new SheetsError('forbidden'));
+    expect((await checkDuplicatesAction('Jan', rows)).error).toContain("can't access");
   });
 });

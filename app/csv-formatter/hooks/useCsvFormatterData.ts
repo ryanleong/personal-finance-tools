@@ -5,6 +5,7 @@ import type { ColumnMapping as ColumnMappingType } from '../components/ColumnMap
 import type { AppendStatus, SheetTarget } from '../components/SheetAppendCard';
 import { uploadFileAction, processFileAction, getSheetTargetAction, appendToSheetAction } from '../actions';
 import { useLastTab } from './useLastTab';
+import { useDuplicateCheck } from './useDuplicateCheck';
 
 const INITIAL_TARGET: SheetTarget = { tabs: [], status: 'loading' };
 
@@ -22,6 +23,7 @@ export function useCsvFormatterData() {
   const resetGeneration = useRef(0);
   const [appendError, setAppendError] = useState<string | null>(null);
   const { readLastTab, saveLastTab } = useLastTab();
+  const duplicateCheck = useDuplicateCheck(selectedTab, previewRows);
 
   useEffect(() => {
     if (currentStep !== 'complete') return;
@@ -103,13 +105,13 @@ export function useCsvFormatterData() {
 
   const handleAppend = async (): Promise<void> => {
     // Ref lock: state is stale between two quick clicks.
-    if (!selectedTab || appendInFlight.current || appendStatus === 'done') return;
+    if (!selectedTab || appendInFlight.current || appendStatus === 'done' || duplicateCheck.status !== 'ready') return;
     appendInFlight.current = true;
     const generation = resetGeneration.current;
     setAppendStatus('appending');
     setAppendError(null);
     try {
-      const result = await appendToSheetAction(selectedTab, previewRows);
+      const result = await appendToSheetAction(selectedTab, previewRows, [...duplicateCheck.excluded]);
       if (generation !== resetGeneration.current) return; // user started over mid-append
       if (result.success) {
         setAppendStatus('done');
@@ -155,6 +157,7 @@ export function useCsvFormatterData() {
     selectedTab,
     appendStatus,
     appendError,
+    duplicateCheck,
     handleTabSelect,
     handleAppend,
     handleStartOver,

@@ -27,6 +27,7 @@ export function CsvFormatterClient() {
     selectedTab,
     appendStatus,
     appendError,
+    duplicateCheck,
     handleTabSelect,
     handleAppend,
     handleStartOver,
@@ -104,6 +105,11 @@ export function CsvFormatterClient() {
                 appendStatus={appendStatus}
                 appendError={appendError}
                 previewRows={previewRows}
+                duplicateStatus={duplicateCheck.status}
+                duplicateError={duplicateCheck.error}
+                duplicates={duplicateCheck.duplicates}
+                excluded={duplicateCheck.excluded}
+                onToggleRow={duplicateCheck.toggleRow}
                 onTabSelect={handleTabSelect}
                 onAppend={handleAppend}
                 onReset={handleStartOver}

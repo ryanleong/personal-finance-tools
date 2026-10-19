@@ -12,8 +12,9 @@ const env = {
 function stub() {
   const get = vi.fn();
   const append = vi.fn();
-  const client = { spreadsheets: { get, values: { append } } } as unknown as SheetsClient;
-  return { get, append, gateway: createSheetsGateway({ env, clientFactory: () => client }) };
+  const valuesGet = vi.fn();
+  const client = { spreadsheets: { get, values: { append, get: valuesGet } } } as unknown as SheetsClient;
+  return { get, append, valuesGet, gateway: createSheetsGateway({ env, clientFactory: () => client }) };
 }
 
 const httpError = (status: number) => Object.assign(new Error('boom'), { code: status });
@@ -103,6 +104,20 @@ describe('appendRows', () => {
     await vi.runAllTimersAsync();
     expect((await p).message).not.toContain('secret');
     expect(console.error).toHaveBeenCalled();
+  });
+});
+
+describe('readRows', () => {
+  it('reads A:H as displayed and defaults to no rows', async () => {
+    const { valuesGet, gateway } = stub();
+    valuesGet.mockResolvedValueOnce({ data: { values: [['a']] } }).mockResolvedValueOnce({ data: {} });
+    expect(await gateway.readRows("Bob's")).toEqual([['a']]);
+    expect(valuesGet).toHaveBeenCalledWith({
+      spreadsheetId: 'sheet123',
+      range: "'Bob''s'!A:H",
+      valueRenderOption: 'FORMATTED_VALUE',
+    });
+    expect(await gateway.readRows('T')).toEqual([]);
   });
 });
 

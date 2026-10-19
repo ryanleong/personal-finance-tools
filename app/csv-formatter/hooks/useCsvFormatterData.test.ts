@@ -8,6 +8,7 @@ vi.mock('../actions', () => ({
   processFileAction: vi.fn(),
   getSheetTargetAction: vi.fn(),
   appendToSheetAction: vi.fn(),
+  checkDuplicatesAction: vi.fn(),
 }));
 
 const mockParsedData = {
@@ -166,6 +167,7 @@ describe('useCsvFormatterData', () => {
         tabs: ['Jan', 'Feb'],
         sheetUrl: 'https://sheet',
       });
+      vi.mocked(actions.checkDuplicatesAction).mockResolvedValue({ success: true, duplicates: rows.map(() => false) });
     });
 
     it('loads the sheet target on entering the complete step', async () => {
@@ -200,7 +202,7 @@ describe('useCsvFormatterData', () => {
 
     it('remembers a selected tab for next time', async () => {
       const { result } = await reachComplete();
-      act(() => result.current.handleTabSelect('Jan'));
+      await act(async () => result.current.handleTabSelect('Jan'));
 
       expect(result.current.selectedTab).toBe('Jan');
       expect(localStorage.getItem('csv-formatter:last-tab')).toBe('Jan');
@@ -209,19 +211,46 @@ describe('useCsvFormatterData', () => {
     it('appends the full formatted rows and ends in done', async () => {
       vi.mocked(actions.appendToSheetAction).mockResolvedValue({ success: true, rowCount: 2 });
       const { result } = await reachComplete();
-      act(() => result.current.handleTabSelect('Jan'));
+      await act(async () => result.current.handleTabSelect('Jan'));
       await act(async () => {
         await result.current.handleAppend();
       });
 
-      expect(actions.appendToSheetAction).toHaveBeenCalledWith('Jan', rows);
+      expect(actions.appendToSheetAction).toHaveBeenCalledWith('Jan', rows, []);
       expect(result.current.appendStatus).toBe('done');
+    });
+
+    it('excludes duplicates by default and lets a row be re-included', async () => {
+      vi.mocked(actions.checkDuplicatesAction).mockResolvedValue({ success: true, duplicates: [true, false] });
+      vi.mocked(actions.appendToSheetAction).mockResolvedValue({ success: true, rowCount: 1 });
+      const { result } = await reachComplete();
+      await act(async () => result.current.handleTabSelect('Jan'));
+      expect([...result.current.duplicateCheck.excluded]).toEqual([0]);
+
+      act(() => result.current.duplicateCheck.toggleRow(0));
+      expect([...result.current.duplicateCheck.excluded]).toEqual([]);
+      act(() => result.current.duplicateCheck.toggleRow(1));
+      await act(async () => {
+        await result.current.handleAppend();
+      });
+      expect(actions.appendToSheetAction).toHaveBeenCalledWith('Jan', rows, [1]);
+    });
+
+    it('does not append when the duplicate check fails', async () => {
+      vi.mocked(actions.checkDuplicatesAction).mockResolvedValue({ success: false, error: 'nope' });
+      const { result } = await reachComplete();
+      await act(async () => result.current.handleTabSelect('Jan'));
+      await act(async () => {
+        await result.current.handleAppend();
+      });
+      expect(result.current.duplicateCheck.status).toBe('error');
+      expect(actions.appendToSheetAction).not.toHaveBeenCalled();
     });
 
     it('ignores further appends after success', async () => {
       vi.mocked(actions.appendToSheetAction).mockResolvedValue({ success: true, rowCount: 2 });
       const { result } = await reachComplete();
-      act(() => result.current.handleTabSelect('Jan'));
+      await act(async () => result.current.handleTabSelect('Jan'));
       await act(async () => {
         await result.current.handleAppend();
       });
@@ -237,7 +266,7 @@ describe('useCsvFormatterData', () => {
         .mockResolvedValueOnce({ success: false, error: 'Google is unavailable. Try again.' })
         .mockResolvedValueOnce({ success: true, rowCount: 2 });
       const { result } = await reachComplete();
-      act(() => result.current.handleTabSelect('Jan'));
+      await act(async () => result.current.handleTabSelect('Jan'));
       await act(async () => {
         await result.current.handleAppend();
       });
@@ -256,7 +285,7 @@ describe('useCsvFormatterData', () => {
     it('sends only one request for a double click', async () => {
       vi.mocked(actions.appendToSheetAction).mockResolvedValue({ success: true, rowCount: 2 });
       const { result } = await reachComplete();
-      act(() => result.current.handleTabSelect('Jan'));
+      await act(async () => result.current.handleTabSelect('Jan'));
       await act(async () => {
         await Promise.all([result.current.handleAppend(), result.current.handleAppend()]);
       });
@@ -268,7 +297,7 @@ describe('useCsvFormatterData', () => {
       let finish!: (r: { success: boolean; rowCount: number }) => void;
       vi.mocked(actions.appendToSheetAction).mockReturnValue(new Promise((res) => (finish = res)));
       const { result } = await reachComplete();
-      act(() => result.current.handleTabSelect('Jan'));
+      await act(async () => result.current.handleTabSelect('Jan'));
       let pending!: Promise<void>;
       act(() => {
         pending = result.current.handleAppend();
@@ -285,7 +314,7 @@ describe('useCsvFormatterData', () => {
     it('resets append state on start over', async () => {
       vi.mocked(actions.appendToSheetAction).mockResolvedValue({ success: true, rowCount: 2 });
       const { result } = await reachComplete();
-      act(() => result.current.handleTabSelect('Jan'));
+      await act(async () => result.current.handleTabSelect('Jan'));
       await act(async () => {
         await result.current.handleAppend();
       });

@@ -13,6 +13,7 @@ import { headers } from 'next/headers';
 import { withTimeout, TimeoutError } from '@/lib/timeout';
 import { createSheetsGateway, filterAllowedTabs, SheetsError, type SheetsErrorKind } from '@/lib/services/sheets';
 import { toSheetRows } from '@/lib/services/sheet-rows';
+import { fingerprintRows, existingFingerprints } from '@/lib/services/fingerprint';
 
 export interface UploadResult {
   success: boolean;
@@ -242,33 +243,68 @@ export async function getSheetTargetAction(): Promise<SheetTargetResult> {
   }
 }
 
-/** Append formatted rows to an existing tab of the target spreadsheet. */
-export async function appendToSheetAction(
+type TabAccess = { error: string } | { gateway: ReturnType<typeof createSheetsGateway> };
+
+// Shared guards for actions that touch a tab: rate limit, row cap, whitelisted tab.
+async function openTab(tab: string, rowCount: number): Promise<TabAccess> {
+  const clientIP = getClientIP(await headers());
+  if (!processRateLimiter.isAllowed(clientIP)) {
+    return { error: `Rate limit exceeded. Please try again in ${processRateLimiter.getRetryAfter(clientIP)} seconds.` };
+  }
+  if (rowCount > MAX_APPEND_ROWS) {
+    return { error: `Too many rows (${rowCount}). The limit is 10,000 rows per append.` };
+  }
+  const gateway = createSheetsGateway();
+  const { tabs } = await gateway.listTabs();
+  if (!filterAllowedTabs(tabs, process.env.GOOGLE_SHEET_ALLOWED_TABS).includes(tab)) {
+    return { error: SHEET_ERRORS['not-found'] };
+  }
+  return { gateway };
+}
+
+export interface DuplicateCheckResult {
+  success: boolean;
+  /** Same order as the rows sent; true when the row's fingerprint is already in the tab. */
+  duplicates?: boolean[];
+  error?: string;
+}
+
+/** Flag which formatted rows already exist in the tab. */
+export async function checkDuplicatesAction(
   tab: string,
   rows: FormattedRow[]
+): Promise<DuplicateCheckResult> {
+  try {
+    const access = await openTab(tab, rows.length);
+    if ('error' in access) return { success: false, error: access.error };
+    const existing = existingFingerprints(await withTimeout(access.gateway.readRows(tab), APPEND_TIMEOUT_MS));
+    return { success: true, duplicates: fingerprintRows(toSheetRows(rows)).map((fp) => existing.has(fp)) };
+  } catch (error) {
+    return { success: false, error: sheetErrorMessage(error) };
+  }
+}
+
+/** Append formatted rows to an existing tab, skipping the row indexes in `excluded`. */
+export async function appendToSheetAction(
+  tab: string,
+  rows: FormattedRow[],
+  excluded: number[] = []
 ): Promise<AppendResult> {
   try {
-    const clientIP = getClientIP(await headers());
-    if (!processRateLimiter.isAllowed(clientIP)) {
-      return {
-        success: false,
-        error: `Rate limit exceeded. Please try again in ${processRateLimiter.getRetryAfter(clientIP)} seconds.`,
-      };
-    }
+    const access = await openTab(tab, rows.length);
+    if ('error' in access) return { success: false, error: access.error };
 
-    if (rows.length > MAX_APPEND_ROWS) {
-      return {
-        success: false,
-        error: `Too many rows (${rows.length}). The limit is 10,000 rows per append.`,
-      };
-    }
+    // Fingerprints cover the whole file so occurrence numbers stay stable when rows are skipped.
+    const sheetRows = toSheetRows(rows);
+    const fingerprints = fingerprintRows(sheetRows);
+    const skip = new Set(excluded);
+    const values = sheetRows
+      .map((row, i) => [...row, '', '', fingerprints[i]])
+      .filter((_, i) => !skip.has(i));
+    if (values.length === 0) return { success: false, error: 'No rows selected to append.' };
 
-    const gateway = createSheetsGateway();
-    const { tabs } = await gateway.listTabs();
-    if (!filterAllowedTabs(tabs, process.env.GOOGLE_SHEET_ALLOWED_TABS).includes(tab)) return { success: false, error: SHEET_ERRORS['not-found'] };
-
-    await withTimeout(gateway.appendRows(tab, toSheetRows(rows)), APPEND_TIMEOUT_MS);
-    return { success: true, rowCount: rows.length };
+    await withTimeout(access.gateway.appendRows(tab, values), APPEND_TIMEOUT_MS);
+    return { success: true, rowCount: values.length };
   } catch (error) {
     return { success: false, error: sheetErrorMessage(error) };
   }
