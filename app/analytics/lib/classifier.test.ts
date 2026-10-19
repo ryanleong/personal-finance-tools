@@ -58,14 +58,18 @@ describe('classifyTransaction', () => {
     ).toBe('transfer');
   });
 
-  // 6. Empty category '' → 'transfer'
-  it("classifies empty category '' as transfer", () => {
-    expect(classifyTransaction(makeTx({ category: '' }))).toBe('transfer');
+  // 6. Blank category is an expense (uncategorised), whatever the sign
+  it("classifies empty category '' as expense for negative and positive amounts", () => {
+    expect(classifyTransaction(makeTx({ category: '', amountSGD: -10 }))).toBe('expense');
+    expect(classifyTransaction(makeTx({ category: '', amountSGD: 10 }))).toBe('expense');
   });
 
-  // 7. Whitespace-only category → 'transfer'
-  it('classifies whitespace-only category as transfer', () => {
-    expect(classifyTransaction(makeTx({ category: '   ' }))).toBe('transfer');
+  it('classifies whitespace-only category as expense', () => {
+    expect(classifyTransaction(makeTx({ category: '   ' }))).toBe('expense');
+  });
+
+  it('classifies blank category with isTransfer true as transfer', () => {
+    expect(classifyTransaction(makeTx({ category: '', isTransfer: true }))).toBe('transfer');
   });
 
   // 8. isTransfer: false + non-income category → 'expense'

@@ -10,8 +10,9 @@ import { formatData, type ColumnMapping, type FormattedRow } from '@/lib/service
 import { validateFileContent } from '@/lib/file-validator';
 import { uploadRateLimiter, processRateLimiter, getClientIP } from '@/lib/rate-limiter';
 import { headers } from 'next/headers';
-import { withTimeout, TimeoutError } from '@/lib/timeout';
-import { createSheetsGateway, filterAllowedTabs, SheetsError, type SheetsErrorKind } from '@/lib/services/sheets';
+import { withTimeout } from '@/lib/timeout';
+import { createSheetsGateway, filterAllowedTabs } from '@/lib/services/sheets';
+import { openTab, sheetErrorMessage } from '@/lib/services/sheet-access';
 import { toSheetRows } from '@/lib/services/sheet-rows';
 import { fingerprintRows, existingFingerprints } from '@/lib/services/fingerprint';
 
@@ -206,26 +207,7 @@ export interface AppendResult {
   error?: string;
 }
 
-const MAX_APPEND_ROWS = 10000;
 const APPEND_TIMEOUT_MS = 30000;
-
-const SHEET_ERRORS: Record<SheetsErrorKind, string> = {
-  forbidden:
-    "The service account can't access this spreadsheet. Check it is shared with the service account as Editor.",
-  'not-found': "That tab wasn't found. Reload the list and pick another.",
-  'rate-limited': 'Google rate limit hit. Wait a minute and try again.',
-  unavailable: 'Google is unavailable. Try again.',
-  timeout:
-    'The request timed out. Check the sheet before retrying, the rows may already have been added.',
-  'not-configured': "Google Sheets isn't configured on the server.",
-};
-
-// Fixed messages only, so no raw error text (or sheet ID) reaches the client.
-function sheetErrorMessage(error: unknown): string {
-  if (error instanceof SheetsError) return SHEET_ERRORS[error.kind];
-  if (error instanceof TimeoutError) return SHEET_ERRORS.timeout;
-  return SHEET_ERRORS.unavailable;
-}
 
 /** Load the target spreadsheet's title and live tab names. */
 export async function getSheetTargetAction(): Promise<SheetTargetResult> {
@@ -243,25 +225,6 @@ export async function getSheetTargetAction(): Promise<SheetTargetResult> {
   }
 }
 
-type TabAccess = { error: string } | { gateway: ReturnType<typeof createSheetsGateway> };
-
-// Shared guards for actions that touch a tab: rate limit, row cap, whitelisted tab.
-async function openTab(tab: string, rowCount: number): Promise<TabAccess> {
-  const clientIP = getClientIP(await headers());
-  if (!processRateLimiter.isAllowed(clientIP)) {
-    return { error: `Rate limit exceeded. Please try again in ${processRateLimiter.getRetryAfter(clientIP)} seconds.` };
-  }
-  if (rowCount > MAX_APPEND_ROWS) {
-    return { error: `Too many rows (${rowCount}). The limit is 10,000 rows per append.` };
-  }
-  const gateway = createSheetsGateway();
-  const { tabs } = await gateway.listTabs();
-  if (!filterAllowedTabs(tabs, process.env.GOOGLE_SHEET_ALLOWED_TABS).includes(tab)) {
-    return { error: SHEET_ERRORS['not-found'] };
-  }
-  return { gateway };
-}
-
 export interface DuplicateCheckResult {
   success: boolean;
   /** Same order as the rows sent; true when the row's fingerprint is already in the tab. */
@@ -275,7 +238,7 @@ export async function checkDuplicatesAction(
   rows: FormattedRow[]
 ): Promise<DuplicateCheckResult> {
   try {
-    const access = await openTab(tab, rows.length);
+    const access = await openTab(tab, processRateLimiter, rows.length);
     if ('error' in access) return { success: false, error: access.error };
     const existing = existingFingerprints(await withTimeout(access.gateway.readRows(tab), APPEND_TIMEOUT_MS));
     return { success: true, duplicates: fingerprintRows(toSheetRows(rows)).map((fp) => existing.has(fp)) };
@@ -291,7 +254,7 @@ export async function appendToSheetAction(
   excluded: number[] = []
 ): Promise<AppendResult> {
   try {
-    const access = await openTab(tab, rows.length);
+    const access = await openTab(tab, processRateLimiter, rows.length);
     if ('error' in access) return { success: false, error: access.error };
 
     // Fingerprints cover the whole file so occurrence numbers stay stable when rows are skipped.

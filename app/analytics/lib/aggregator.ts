@@ -1,5 +1,6 @@
 import type { Transaction, DateRange, AnalyticsSummary, CategoryBreakdown } from '../types';
 import { classifyTransaction, getExpenseCategoryLabel } from './classifier';
+import { getAveragingBasis } from './averaging';
 
 /** Normalise date to midnight and check if it falls within [range.start, range.end] inclusive. */
 function dateIsInRange(date: Date, range: DateRange): boolean {
@@ -85,10 +86,15 @@ export function aggregateTransactions(
     return breakdowns;
   }
 
+  const { unit: averageUnit, count } = getAveragingBasis(dateRange);
+
   return {
     totalIncome,
     totalExpenses,
     netCashflow,
+    averageIncome: totalIncome / count,
+    averageExpenses: totalExpenses / count,
+    averageUnit,
     incomeByCategory: buildBreakdowns(incomeMap, totalIncome),
     expensesByCategory: buildBreakdowns(expenseMap, totalExpenses),
     cashflowChangePct: null,

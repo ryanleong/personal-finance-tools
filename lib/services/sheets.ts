@@ -24,6 +24,8 @@ export interface SheetsGateway {
   appendRows(tab: string, values: (string | number)[][]): Promise<void>;
   /** Columns A:H as displayed; Sheets omits trailing blank cells. */
   readRows(tab: string): Promise<string[][]>;
+  /** Columns A:F as raw values (dates as serial numbers, booleans as booleans); trailing blanks omitted. */
+  readTransactionRows(tab: string): Promise<(string | number | boolean)[][]>;
 }
 
 export type SheetsClient = sheets_v4.Sheets;
@@ -122,6 +124,16 @@ export function createSheetsGateway(opts: Options = {}): SheetsGateway {
         })
       );
       return (res.data.values ?? []) as string[][];
+    },
+    async readTransactionRows(tab) {
+      const res = await call(() =>
+        client.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: `'${tab.replace(/'/g, "''")}'!A:F`,
+          valueRenderOption: 'UNFORMATTED_VALUE',
+        })
+      );
+      return (res.data.values ?? []) as (string | number | boolean)[][];
     },
     async appendRows(tab, values) {
       await call(() =>

@@ -121,6 +121,28 @@ describe('readRows', () => {
   });
 });
 
+describe('readTransactionRows', () => {
+  it('reads A:F unformatted and defaults to no rows', async () => {
+    const { valuesGet, gateway } = stub();
+    valuesGet
+      .mockResolvedValueOnce({ data: { values: [[45000, 'Food', '', 'Card', -3.5, true]] } })
+      .mockResolvedValueOnce({ data: {} });
+    expect(await gateway.readTransactionRows("Bob's")).toEqual([[45000, 'Food', '', 'Card', -3.5, true]]);
+    expect(valuesGet).toHaveBeenCalledWith({
+      spreadsheetId: 'sheet123',
+      range: "'Bob''s'!A:F",
+      valueRenderOption: 'UNFORMATTED_VALUE',
+    });
+    expect(await gateway.readTransactionRows('T')).toEqual([]);
+  });
+
+  it('maps 403 to forbidden', async () => {
+    const { valuesGet, gateway } = stub();
+    valuesGet.mockRejectedValue(httpError(403));
+    expect(await kindOf(gateway.readTransactionRows('T'))).toBe('forbidden');
+  });
+});
+
 describe('listTabs', () => {
   it('requests minimal fields and returns title and tab names', async () => {
     const { get, gateway } = stub();

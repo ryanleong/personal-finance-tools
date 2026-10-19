@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAnalyticsData } from './useAnalyticsData';
 import type { Transaction } from '../types';
+import * as analyticsActions from '../actions';
+import * as formatterActions from '../../csv-formatter/actions';
 
-// Mock storage so IDB doesn't run in jsdom
-vi.mock('../lib/storage', () => ({
-  loadTransactions: vi.fn().mockResolvedValue(null),
-  saveTransactions: vi.fn().mockResolvedValue(undefined),
-  clearTransactions: vi.fn().mockResolvedValue(undefined),
-}));
+vi.mock('../actions', () => ({ readTabAction: vi.fn() }));
+vi.mock('../../csv-formatter/actions', () => ({ getSheetTargetAction: vi.fn() }));
+
+const readTab = vi.mocked(analyticsActions.readTabAction);
+const getTarget = vi.mocked(formatterActions.getSheetTargetAction);
+
+const HEADER = ['Date', 'Category', 'Notes', 'Account', 'Amt', 'Is Transfer'];
 
 function d(year: number, month: number, day: number): Date {
   return new Date(year, month - 1, day);
@@ -32,80 +35,86 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   };
 }
 
+/** Local calendar date -> Google Sheets serial day number. */
+function serial(date: Date): number {
+  return (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(1899, 11, 30)) / 86_400_000;
+}
+
+function sheetRows(txs: Transaction[]) {
+  return [
+    HEADER,
+    ...txs.map((t) => [serial(t.date), t.category, t.notes, t.account, t.amountSGD, false]),
+  ];
+}
+
+/** Render the hook and load the given transactions through the mocked sheet actions. */
+async function renderLoaded(txs: Transaction[]) {
+  readTab.mockResolvedValue({ success: true, rows: sheetRows(txs) });
+  const hook = renderHook(() => useAnalyticsData());
+  await waitFor(() => expect(hook.result.current.tabsStatus).toBe('ready'));
+  await act(async () => {
+    hook.result.current.selectTab('Jan');
+  });
+  await waitFor(() => expect(hook.result.current.status).toBe('loaded'));
+  return hook;
+}
+
+const WIDE_RANGE = { start: d(2020, 1, 1), end: d(2030, 12, 31) };
+
 describe('useAnalyticsData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    getTarget.mockResolvedValue({ success: true, tabs: ['Jan', 'Feb'] });
   });
 
-  // 1. status starts as 'empty'
-  it("status starts as 'empty'", () => {
+  it("status starts as 'idle' with no tab selected", async () => {
     const { result } = renderHook(() => useAnalyticsData());
-    expect(result.current.status).toBe('empty');
+    expect(result.current.status).toBe('idle');
+    await waitFor(() => expect(result.current.tabsStatus).toBe('ready'));
+    expect(result.current.selectedTab).toBeNull();
   });
 
-  // 2. After setTransactions([...]), status becomes 'loaded'
-  it("status becomes 'loaded' after setTransactions is called", () => {
-    const { result } = renderHook(() => useAnalyticsData());
-    act(() => {
-      result.current.setTransactions([makeTx()]);
-    });
+  it("status becomes 'loaded' once a tab is selected and read", async () => {
+    const { result } = await renderLoaded([makeTx()]);
     expect(result.current.status).toBe('loaded');
+    expect(result.current.selectedTab).toBe('Jan');
+    expect(result.current.transactions).toHaveLength(1);
   });
 
-  // 3. availableAccounts is derived from loaded transactions (sorted, deduplicated)
-  it('derives availableAccounts sorted and deduplicated from transactions', () => {
-    const { result } = renderHook(() => useAnalyticsData());
-    act(() => {
-      result.current.setTransactions([
-        makeTx({ account: 'UOB' }),
-        makeTx({ account: 'DBS' }),
-        makeTx({ account: 'DBS' }), // duplicate
-        makeTx({ account: 'OCBC' }),
-      ]);
-    });
+  it('derives availableAccounts sorted and deduplicated from transactions', async () => {
+    const { result } = await renderLoaded([
+      makeTx({ account: 'UOB' }),
+      makeTx({ account: 'DBS' }),
+      makeTx({ account: 'DBS' }), // duplicate
+      makeTx({ account: 'OCBC' }),
+    ]);
     expect(result.current.availableAccounts).toEqual(['DBS', 'OCBC', 'UOB']);
   });
 
-  // 4. summary.totalIncome updates when setFilter changes the period
-  it('updates summary.totalIncome when filter period changes', () => {
-    // Income tx on 2025-01-15 (inside ytd but inside last30 only if today is nearby)
-    // We use a date that is definitely in 'ytd' but NOT in 'last30' relative to today
-    // Today in tests is whatever real today is, so use a far-past date
-    const pastTx = makeTx({ date: d(2023, 6, 1), category: 'salary, invoices', amountSGD: 999 });
-    const { result } = renderHook(() => useAnalyticsData());
-    act(() => {
-      result.current.setTransactions([pastTx]);
-    });
+  it('updates summary.totalIncome when filter period changes', async () => {
+    const { result } = await renderLoaded([makeTx({ date: d(2023, 6, 1), amountSGD: 999 })]);
 
-    // With default 'last30', the 2023 tx is outside range → totalIncome = 0
+    // Default 'last30' excludes the 2023 transaction
     expect(result.current.summary.totalIncome).toBe(0);
 
-    // Switch to 'ytd' — still won't include 2023 in 2025-ytd, so let's use 'custom' with wide range
     act(() => {
-      result.current.setFilter({
-        selectedPeriod: 'custom',
-        customDateRange: { start: d(2020, 1, 1), end: d(2030, 12, 31) },
-      });
+      result.current.setFilter({ selectedPeriod: 'custom', customDateRange: WIDE_RANGE });
     });
     expect(result.current.summary.totalIncome).toBe(999);
   });
 
-  // 5. summary.netCashflow is correct
-  it('calculates netCashflow correctly', () => {
-    const incomeTx = makeTx({ category: 'salary, invoices', amountSGD: 3000 });
-    const expenseTx = makeTx({ category: 'Food', amountSGD: -1200 });
-    const { result } = renderHook(() => useAnalyticsData());
+  it('calculates netCashflow correctly', async () => {
+    const { result } = await renderLoaded([
+      makeTx({ category: 'salary, invoices', amountSGD: 3000 }),
+      makeTx({ category: 'Food', amountSGD: -1200 }),
+    ]);
     act(() => {
-      result.current.setTransactions([incomeTx, expenseTx]);
-      result.current.setFilter({
-        selectedPeriod: 'custom',
-        customDateRange: { start: d(2020, 1, 1), end: d(2030, 12, 31) },
-      });
+      result.current.setFilter({ selectedPeriod: 'custom', customDateRange: WIDE_RANGE });
     });
     expect(result.current.summary.netCashflow).toBe(1800);
   });
 
-  // 6. filterState and setFilter are exposed
   it('exposes filterState and setFilter', () => {
     const { result } = renderHook(() => useAnalyticsData());
     expect(result.current.filterState.selectedPeriod).toBe('last30');
@@ -115,7 +124,6 @@ describe('useAnalyticsData', () => {
     expect(result.current.filterState.selectedPeriod).toBe('ytd');
   });
 
-  // 7. custom period with null customDateRange falls back to last30 range (no throw)
   it("does not throw when period is 'custom' but customDateRange is null (falls back to last30)", () => {
     const { result } = renderHook(() => useAnalyticsData());
     expect(() => {
@@ -125,72 +133,77 @@ describe('useAnalyticsData', () => {
     }).not.toThrow();
   });
 
-  // 8. cashflowChangePct is a number when both current and previous periods have cashflow
-  it('cashflowChangePct is a number when both periods have cashflow', () => {
-    const { result } = renderHook(() => useAnalyticsData());
-    act(() => {
-      result.current.setTransactions([
-        makeTx({ date: daysAgo(5), category: 'salary, invoices', amountSGD: 2000 }),
-        makeTx({ date: daysAgo(40), category: 'salary, invoices', amountSGD: 1000 }),
-      ]);
-      result.current.setFilter({ selectedPeriod: 'last30' });
-    });
+  it('cashflowChangePct is a number when both periods have cashflow', async () => {
+    const { result } = await renderLoaded([
+      makeTx({ date: daysAgo(5), amountSGD: 2000 }),
+      makeTx({ date: daysAgo(40), amountSGD: 1000 }),
+    ]);
     expect(typeof result.current.summary.cashflowChangePct).toBe('number');
   });
 
-  // 9. cashflowChangePct is null when previous period has no transactions
-  it('cashflowChangePct is null when previous period has no transactions', () => {
-    const { result } = renderHook(() => useAnalyticsData());
-    act(() => {
-      result.current.setTransactions([
-        makeTx({ date: daysAgo(5), category: 'salary, invoices', amountSGD: 1000 }),
-        // no transactions in days 31-60
-      ]);
-      result.current.setFilter({ selectedPeriod: 'last30' });
-    });
+  it('cashflowChangePct is null when previous period has no transactions', async () => {
+    const { result } = await renderLoaded([makeTx({ date: daysAgo(5), amountSGD: 1000 })]);
     expect(result.current.summary.cashflowChangePct).toBeNull();
   });
 
-  // 10. cashflowChangePct is null when previous period has zero net cashflow (income == expenses)
-  it('cashflowChangePct is null when previous period net cashflow is zero', () => {
-    const { result } = renderHook(() => useAnalyticsData());
-    act(() => {
-      result.current.setTransactions([
-        makeTx({ date: daysAgo(5), category: 'salary, invoices', amountSGD: 1000 }),
-        // Previous period: income 500, expense -500 → netCashflow = 0
-        makeTx({ date: daysAgo(40), category: 'salary, invoices', amountSGD: 500 }),
-        makeTx({ date: daysAgo(40), category: 'Food', amountSGD: -500 }),
-      ]);
-      result.current.setFilter({ selectedPeriod: 'last30' });
-    });
+  it('cashflowChangePct is null when previous period net cashflow is zero', async () => {
+    const { result } = await renderLoaded([
+      makeTx({ date: daysAgo(5), amountSGD: 1000 }),
+      // Previous period: income 500, expense -500 -> netCashflow = 0
+      makeTx({ date: daysAgo(40), amountSGD: 500 }),
+      makeTx({ date: daysAgo(40), category: 'Food', amountSGD: -500 }),
+    ]);
     expect(result.current.summary.cashflowChangePct).toBeNull();
   });
 
-  // 11. cashflowChangePct is positive when current cashflow > previous
-  it('cashflowChangePct is positive when current cashflow exceeds previous', () => {
-    // current: +2000, previous: +1000 → (2000-1000)/1000*100 = +100%
-    const { result } = renderHook(() => useAnalyticsData());
-    act(() => {
-      result.current.setTransactions([
-        makeTx({ date: daysAgo(5), category: 'salary, invoices', amountSGD: 2000 }),
-        makeTx({ date: daysAgo(40), category: 'salary, invoices', amountSGD: 1000 }),
-      ]);
-      result.current.setFilter({ selectedPeriod: 'last30' });
-    });
+  it('cashflowChangePct is positive when current cashflow exceeds previous', async () => {
+    // current: +2000, previous: +1000 -> +100%
+    const { result } = await renderLoaded([
+      makeTx({ date: daysAgo(5), amountSGD: 2000 }),
+      makeTx({ date: daysAgo(40), amountSGD: 1000 }),
+    ]);
     expect(result.current.summary.cashflowChangePct).toBeCloseTo(100);
   });
 
-  // 12. cashflowChangePct is negative when current cashflow < previous
-  it('cashflowChangePct is negative when current cashflow is less than previous', () => {
-    // current: +500, previous: +1000 → (500-1000)/1000*100 = -50%
-    const { result } = renderHook(() => useAnalyticsData());
-    act(() => {
-      result.current.setTransactions([
-        makeTx({ date: daysAgo(5), category: 'salary, invoices', amountSGD: 500 }),
-        makeTx({ date: daysAgo(40), category: 'salary, invoices', amountSGD: 1000 }),
-      ]);
-      result.current.setFilter({ selectedPeriod: 'last30' });
-    });
+  it('cashflowChangePct is negative when current cashflow is less than previous', async () => {
+    // current: +500, previous: +1000 -> -50%
+    const { result } = await renderLoaded([
+      makeTx({ date: daysAgo(5), amountSGD: 500 }),
+      makeTx({ date: daysAgo(40), amountSGD: 1000 }),
+    ]);
     expect(result.current.summary.cashflowChangePct).toBeCloseTo(-50);
+  });
+
+  describe('filters across tab changes and refresh', () => {
+    it('selectTab resets selected accounts but keeps period and custom range', async () => {
+      const { result } = await renderLoaded([makeTx({ account: 'DBS' }), makeTx({ account: 'UOB' })]);
+      act(() => {
+        result.current.setFilter({
+          selectedPeriod: 'custom',
+          customDateRange: WIDE_RANGE,
+          selectedAccounts: ['DBS'],
+        });
+      });
+      await act(async () => {
+        result.current.selectTab('Feb');
+      });
+      await waitFor(() => expect(result.current.status).toBe('loaded'));
+      expect(result.current.filterState.selectedAccounts).toEqual([]);
+      expect(result.current.filterState.selectedPeriod).toBe('custom');
+      expect(result.current.filterState.customDateRange).toEqual(WIDE_RANGE);
+    });
+
+    it('refresh keeps all filters', async () => {
+      const { result } = await renderLoaded([makeTx({ account: 'DBS' }), makeTx({ account: 'UOB' })]);
+      act(() => {
+        result.current.setFilter({ selectedPeriod: 'ytd', selectedAccounts: ['DBS'] });
+      });
+      await act(async () => {
+        result.current.refresh();
+      });
+      await waitFor(() => expect(result.current.status).toBe('loaded'));
+      expect(result.current.filterState.selectedAccounts).toEqual(['DBS']);
+      expect(result.current.filterState.selectedPeriod).toBe('ytd');
+    });
   });
 });

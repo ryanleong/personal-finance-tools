@@ -44,6 +44,9 @@ export interface AnalyticsSummary {
   totalIncome: number;
   totalExpenses: number;  // always positive (absolute value)
   netCashflow: number;    // totalIncome - totalExpenses (can be negative)
+  averageIncome: number;    // totalIncome per averageUnit
+  averageExpenses: number;  // totalExpenses per averageUnit
+  averageUnit: 'day' | 'month' | 'year';  // from the length of the date range
   incomeByCategory: CategoryBreakdown[];
   expensesByCategory: CategoryBreakdown[];
   cashflowChangePct: number | null;  // null = N/A (zero prior cashflow or no prior data)

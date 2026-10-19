@@ -91,11 +91,15 @@ export const uploadRateLimiter = new RateLimiter(10, 60);
 // File processing: 5 requests per minute (more intensive)
 export const processRateLimiter = new RateLimiter(5, 60);
 
+// Sheet reads: 30 requests per minute
+export const readRateLimiter = new RateLimiter(30, 60);
+
 // Cleanup old entries every 10 minutes
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     uploadRateLimiter.cleanup();
     processRateLimiter.cleanup();
+    readRateLimiter.cleanup();
   }, 10 * 60 * 1000);
 }
 

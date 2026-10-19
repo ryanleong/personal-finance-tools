@@ -13,7 +13,7 @@ function formatSGD(amount: number): string {
 }
 
 export function SummaryCards({ summary }: SummaryCardsProps) {
-  const { totalIncome, totalExpenses, netCashflow, cashflowChangePct } = summary;
+  const { totalIncome, totalExpenses, netCashflow, cashflowChangePct, averageIncome, averageExpenses, averageUnit } = summary;
   const netIsPositive = netCashflow >= 0;
 
   return (
@@ -22,12 +22,14 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
       <div className="flex-1 min-w-[200px] bg-card border border-border rounded-xl p-5">
         <p className="text-xs font-medium uppercase tracking-wide opacity-60 mb-1">Total Income</p>
         <p className="text-2xl font-semibold text-green-500">{formatSGD(totalIncome)}</p>
+        <p className="mt-2 text-xs opacity-60">Avg {formatSGD(averageIncome)} / {averageUnit}</p>
       </div>
 
       {/* Total Expenses */}
       <div className="flex-1 min-w-[200px] bg-card border border-border rounded-xl p-5">
         <p className="text-xs font-medium uppercase tracking-wide opacity-60 mb-1">Total Expenses</p>
         <p className="text-2xl font-semibold text-red-500">{formatSGD(totalExpenses)}</p>
+        <p className="mt-2 text-xs opacity-60">Avg {formatSGD(averageExpenses)} / {averageUnit}</p>
       </div>
 
       {/* Net Cashflow */}

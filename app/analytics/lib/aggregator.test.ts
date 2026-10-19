@@ -33,6 +33,18 @@ describe('aggregateTransactions', () => {
     expect(result.expensesByCategory).toHaveLength(0);
   });
 
+  it('puts blank-category rows of either sign under expenses as Uncategorised', () => {
+    const txs = [
+      makeTx({ category: '', amountSGD: -100 }),
+      makeTx({ category: '', amountSGD: 30 }),
+    ];
+    const result = aggregateTransactions(txs, WIDE_RANGE, []);
+    expect(result.expensesByCategory).toHaveLength(1);
+    expect(result.expensesByCategory[0].category).toBe('Uncategorised');
+    expect(result.expensesByCategory[0].amount).toBe(-70);
+    expect(result.totalExpenses).toBe(70);
+  });
+
   // 2. Date range filtering: tx before range → excluded; in range → included; after → excluded
   it('excludes transactions outside the date range', () => {
     const range: DateRange = { start: d(2025, 5, 1), end: d(2025, 5, 31) };
@@ -207,5 +219,33 @@ describe('aggregateTransactions', () => {
     const result = aggregateTransactions(txs, WIDE_RANGE, []);
     // netExpenseSum = +15 → totalExpenses = Math.max(0, -15) = 0
     expect(result.totalExpenses).toBe(0);
+  });
+});
+
+describe('aggregateTransactions averages', () => {
+  it('averages per day for a short range, using the inclusive day count', () => {
+    const range: DateRange = { start: d(2025, 5, 1), end: d(2025, 5, 10) };
+    const txs = [makeTx({ date: d(2025, 5, 5), category: 'Income', amountSGD: 1000 }), makeTx({ date: d(2025, 5, 5), amountSGD: -200 })];
+    const result = aggregateTransactions(txs, range, []);
+    expect(result.averageUnit).toBe('day');
+    expect(result.averageIncome).toBe(100);
+    expect(result.averageExpenses).toBe(20);
+  });
+
+  it('averages per month for a range of 3 calendar months', () => {
+    const range: DateRange = { start: d(2025, 1, 1), end: d(2025, 3, 31) };
+    const txs = [makeTx({ date: d(2025, 2, 5), category: 'Income', amountSGD: 9000 }), makeTx({ date: d(2025, 2, 5), amountSGD: -300 })];
+    const result = aggregateTransactions(txs, range, []);
+    expect(result.averageUnit).toBe('month');
+    expect(result.averageIncome).toBe(3000);
+    expect(result.averageExpenses).toBe(100);
+  });
+
+  it('averages per year for a range of 2 calendar years', () => {
+    const range: DateRange = { start: d(2024, 1, 1), end: d(2025, 12, 31) };
+    const txs = [makeTx({ date: d(2025, 5, 15), category: 'Income', amountSGD: 100000 })];
+    const result = aggregateTransactions(txs, range, []);
+    expect(result.averageUnit).toBe('year');
+    expect(result.averageIncome).toBe(50000);
   });
 });

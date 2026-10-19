@@ -1,15 +1,11 @@
 import { useMemo } from 'react';
 import type { Transaction, AnalyticsSummary } from '../types';
-import { useTransactionState } from './useTransactionState';
-import { useTransactionSync } from './useTransactionSync';
+import { useSheetSource, type UseSheetSourceReturn } from './useSheetSource';
 import { useFilterState, type FilterState } from './useFilterState';
 import { resolveDateRange, resolvePreviousPeriodRange } from '../lib/periods';
 import { aggregateTransactions } from '../lib/aggregator';
 
-export interface UseAnalyticsDataReturn {
-  transactions: Transaction[];
-  setTransactions: (txs: Transaction[]) => void;
-  status: 'empty' | 'loaded';
+export interface UseAnalyticsDataReturn extends UseSheetSourceReturn {
   filterState: FilterState;
   setFilter: (update: Partial<FilterState>) => void;
   availableAccounts: string[];
@@ -17,10 +13,15 @@ export interface UseAnalyticsDataReturn {
 }
 
 export function useAnalyticsData(initialTransactions?: Transaction[]): UseAnalyticsDataReturn {
-  const { transactions, status, setTransactions } = useTransactionState(initialTransactions);
-  useTransactionSync(transactions, status);
-
+  const source = useSheetSource(initialTransactions);
+  const { transactions } = source;
   const { filterState, setFilter } = useFilterState();
+
+  // A different tab means different accounts; period and custom range persist.
+  function selectTab(tab: string) {
+    setFilter({ selectedAccounts: [] });
+    source.selectTab(tab);
+  }
 
   const availableAccounts = useMemo(
     () => [...new Set(transactions.map((t) => t.account))].sort(),
@@ -65,9 +66,8 @@ export function useAnalyticsData(initialTransactions?: Transaction[]): UseAnalyt
   );
 
   return {
-    transactions,
-    setTransactions,
-    status,
+    ...source,
+    selectTab,
     filterState,
     setFilter,
     availableAccounts,

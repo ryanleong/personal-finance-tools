@@ -1,8 +1,8 @@
 import { INCOME_CATEGORIES, UNCATEGORISED_LABEL, type Transaction, type TransactionType } from '../types';
 
 export function classifyTransaction(tx: Transaction): TransactionType {
-  // Transfer takes priority: explicit flag or empty/blank category
-  if (tx.isTransfer === true || tx.category.trim() === '') {
+  // Transfer only via the explicit flag; a blank category is an uncategorised expense
+  if (tx.isTransfer === true) {
     return 'transfer';
   }
 
