@@ -10,7 +10,9 @@ import { formatData, type ColumnMapping, type FormattedRow } from '@/lib/service
 import { validateFileContent } from '@/lib/file-validator';
 import { uploadRateLimiter, processRateLimiter, getClientIP } from '@/lib/rate-limiter';
 import { headers } from 'next/headers';
-import { withTimeout } from '@/lib/timeout';
+import { withTimeout, TimeoutError } from '@/lib/timeout';
+import { createSheetsGateway, filterAllowedTabs, SheetsError, type SheetsErrorKind } from '@/lib/services/sheets';
+import { toSheetRows } from '@/lib/services/sheet-rows';
 
 export interface UploadResult {
   success: boolean;
@@ -25,7 +27,6 @@ export interface UploadResult {
 
 export interface ProcessResult {
   success: boolean;
-  csvString?: string;
   data?: FormattedRow[];
   rowCount?: number;
   error?: string;
@@ -123,7 +124,7 @@ export async function uploadFileAction(formData: FormData): Promise<UploadResult
 
 /**
  * Process parsed data with column mapping
- * Returns formatted CSV string
+ * Returns formatted rows
  */
 export async function processFileAction(
   rows: (string | number)[][],
@@ -169,7 +170,7 @@ export async function processFileAction(
       'Data formatting timed out. The dataset may be too large or complex.'
     );
 
-    if (!formatResult.success || !formatResult.csvString) {
+    if (!formatResult.success || !formatResult.data) {
       return {
         success: false,
         error: formatResult.error || 'Failed to format data',
@@ -178,7 +179,6 @@ export async function processFileAction(
 
     return {
       success: true,
-      csvString: formatResult.csvString,
       data: formatResult.data,
       rowCount: formatResult.data?.length || 0,
     };
@@ -187,5 +187,89 @@ export async function processFileAction(
       success: false,
       error: `Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
+  }
+}
+
+export interface SheetTargetResult {
+  success: boolean;
+  title?: string;
+  tabs?: string[];
+  tabGids?: Record<string, number>;
+  sheetUrl?: string;
+  error?: string;
+}
+
+export interface AppendResult {
+  success: boolean;
+  rowCount?: number;
+  error?: string;
+}
+
+const MAX_APPEND_ROWS = 10000;
+const APPEND_TIMEOUT_MS = 30000;
+
+const SHEET_ERRORS: Record<SheetsErrorKind, string> = {
+  forbidden:
+    "The service account can't access this spreadsheet. Check it is shared with the service account as Editor.",
+  'not-found': "That tab wasn't found. Reload the list and pick another.",
+  'rate-limited': 'Google rate limit hit. Wait a minute and try again.',
+  unavailable: 'Google is unavailable. Try again.',
+  timeout:
+    'The request timed out. Check the sheet before retrying, the rows may already have been added.',
+  'not-configured': "Google Sheets isn't configured on the server.",
+};
+
+// Fixed messages only, so no raw error text (or sheet ID) reaches the client.
+function sheetErrorMessage(error: unknown): string {
+  if (error instanceof SheetsError) return SHEET_ERRORS[error.kind];
+  if (error instanceof TimeoutError) return SHEET_ERRORS.timeout;
+  return SHEET_ERRORS.unavailable;
+}
+
+/** Load the target spreadsheet's title and live tab names. */
+export async function getSheetTargetAction(): Promise<SheetTargetResult> {
+  try {
+    const { title, tabs, tabGids } = await createSheetsGateway().listTabs();
+    return {
+      success: true,
+      title,
+      tabs: filterAllowedTabs(tabs, process.env.GOOGLE_SHEET_ALLOWED_TABS),
+      tabGids,
+      sheetUrl: `https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEET_ID}`,
+    };
+  } catch (error) {
+    return { success: false, error: sheetErrorMessage(error) };
+  }
+}
+
+/** Append formatted rows to an existing tab of the target spreadsheet. */
+export async function appendToSheetAction(
+  tab: string,
+  rows: FormattedRow[]
+): Promise<AppendResult> {
+  try {
+    const clientIP = getClientIP(await headers());
+    if (!processRateLimiter.isAllowed(clientIP)) {
+      return {
+        success: false,
+        error: `Rate limit exceeded. Please try again in ${processRateLimiter.getRetryAfter(clientIP)} seconds.`,
+      };
+    }
+
+    if (rows.length > MAX_APPEND_ROWS) {
+      return {
+        success: false,
+        error: `Too many rows (${rows.length}). The limit is 10,000 rows per append.`,
+      };
+    }
+
+    const gateway = createSheetsGateway();
+    const { tabs } = await gateway.listTabs();
+    if (!filterAllowedTabs(tabs, process.env.GOOGLE_SHEET_ALLOWED_TABS).includes(tab)) return { success: false, error: SHEET_ERRORS['not-found'] };
+
+    await withTimeout(gateway.appendRows(tab, toSheetRows(rows)), APPEND_TIMEOUT_MS);
+    return { success: true, rowCount: rows.length };
+  } catch (error) {
+    return { success: false, error: sheetErrorMessage(error) };
   }
 }

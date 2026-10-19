@@ -1,17 +1,49 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Step, ParsedFileData } from '../types';
 import type { FormattedRow } from '../../../lib/services/formatter';
 import type { ColumnMapping as ColumnMappingType } from '../components/ColumnMapping';
-import { uploadFileAction, processFileAction } from '../actions';
+import type { AppendStatus, SheetTarget } from '../components/SheetAppendCard';
+import { uploadFileAction, processFileAction, getSheetTargetAction, appendToSheetAction } from '../actions';
+import { useLastTab } from './useLastTab';
+
+const INITIAL_TARGET: SheetTarget = { tabs: [], status: 'loading' };
 
 export function useCsvFormatterData() {
   const [currentStep, setCurrentStep] = useState<Step>('upload');
   const [parsedData, setParsedData] = useState<ParsedFileData | null>(null);
   const [selectedHeaderRow, setSelectedHeaderRow] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processedCSV, setProcessedCSV] = useState<string | null>(null);
   const [previewRows, setPreviewRows] = useState<FormattedRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [sheetTarget, setSheetTarget] = useState<SheetTarget>(INITIAL_TARGET);
+  const [selectedTab, setSelectedTab] = useState<string | null>(null);
+  const [appendStatus, setAppendStatus] = useState<AppendStatus>('idle');
+  const appendInFlight = useRef(false);
+  const resetGeneration = useRef(0);
+  const [appendError, setAppendError] = useState<string | null>(null);
+  const { readLastTab, saveLastTab } = useLastTab();
+
+  useEffect(() => {
+    if (currentStep !== 'complete') return;
+    let cancelled = false;
+    getSheetTargetAction()
+      .then(result => {
+        if (cancelled) return;
+        if (!result.success || !result.tabs) {
+          setSheetTarget({ tabs: [], status: 'error' });
+          return;
+        }
+        setSheetTarget({ status: 'ready', title: result.title, tabs: result.tabs, tabGids: result.tabGids, sheetUrl: result.sheetUrl });
+        const last = readLastTab();
+        setSelectedTab(last && result.tabs.includes(last) ? last : null);
+      })
+      .catch(() => {
+        if (!cancelled) setSheetTarget({ tabs: [], status: 'error' });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentStep, readLastTab]);
 
   const mappingHeaders = useMemo<string[]>(() => {
     if (!parsedData) return [];
@@ -52,9 +84,8 @@ export function useCsvFormatterData() {
         ...mapping,
         headerRowIndex: selectedHeaderRow,
       });
-      if (result.success && result.csvString) {
-        setProcessedCSV(result.csvString);
-        setPreviewRows(result.data || []);
+      if (result.success && result.data) {
+        setPreviewRows(result.data);
         setCurrentStep('complete');
       } else {
         setError(result.error || 'Failed to process file');
@@ -65,30 +96,48 @@ export function useCsvFormatterData() {
       setIsProcessing(false);
     }
   };
-  const handleDownload = (): void => {
-    if (!processedCSV || !parsedData) return;
-    const blob = new Blob([processedCSV], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `formatted_${parsedData.fileName.replace(/\.[^/.]+$/, '')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    // Use setTimeout to ensure the download starts before cleanup
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 100);
+  const handleTabSelect = (tab: string): void => {
+    setSelectedTab(tab);
+    saveLastTab(tab);
+  };
+
+  const handleAppend = async (): Promise<void> => {
+    // Ref lock: state is stale between two quick clicks.
+    if (!selectedTab || appendInFlight.current || appendStatus === 'done') return;
+    appendInFlight.current = true;
+    const generation = resetGeneration.current;
+    setAppendStatus('appending');
+    setAppendError(null);
+    try {
+      const result = await appendToSheetAction(selectedTab, previewRows);
+      if (generation !== resetGeneration.current) return; // user started over mid-append
+      if (result.success) {
+        setAppendStatus('done');
+      } else {
+        setAppendStatus('error');
+        setAppendError(result.error || 'Failed to append rows');
+      }
+    } catch (err) {
+      if (generation !== resetGeneration.current) return;
+      setAppendStatus('error');
+      setAppendError(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      if (generation === resetGeneration.current) appendInFlight.current = false;
+    }
   };
 
   const handleStartOver = (): void => {
+    resetGeneration.current += 1;
+    appendInFlight.current = false;
     setCurrentStep('upload');
     setParsedData(null);
     setSelectedHeaderRow(0);
-    setProcessedCSV(null);
     setPreviewRows([]);
     setError(null);
+    setSheetTarget(INITIAL_TARGET);
+    setSelectedTab(null);
+    setAppendStatus('idle');
+    setAppendError(null);
   };
 
   return {
@@ -96,14 +145,18 @@ export function useCsvFormatterData() {
     parsedData,
     selectedHeaderRow,
     isProcessing,
-    processedCSV,
     previewRows,
     error,
     mappingHeaders,
     handleFileSelect,
     handleHeaderRowSelect,
     handleMappingComplete,
-    handleDownload,
+    sheetTarget,
+    selectedTab,
+    appendStatus,
+    appendError,
+    handleTabSelect,
+    handleAppend,
     handleStartOver,
   };
 }

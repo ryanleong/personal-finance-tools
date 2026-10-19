@@ -25,7 +25,6 @@ export interface FormattedRow {
 export interface FormatResult {
   success: boolean;
   data?: FormattedRow[];
-  csvString?: string;
   error?: string;
 }
 
@@ -249,13 +248,9 @@ export function formatData(
       });
     }
 
-    // Generate CSV string
-    const csvString = generateCSV(formattedRows);
-
     return {
       success: true,
       data: formattedRows,
-      csvString,
     };
   } catch (error) {
     return {
@@ -263,66 +258,4 @@ export function formatData(
       error: `Formatting failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
-}
-
-/**
- * Sanitize a value to prevent CSV injection attacks
- * If a cell starts with =, +, -, @, Tab, or Carriage Return, it could be interpreted as a formula
- */
-function sanitizeForCSV(value: string): string {
-  if (!value) return value;
-
-  const trimmed = value.trim();
-
-  // Check if the value starts with a dangerous character
-  const dangerousChars = ['=', '+', '-', '@', '\t', '\r'];
-  if (dangerousChars.some(char => trimmed.startsWith(char))) {
-    // Prefix with single quote to prevent formula execution
-    // Also prefix with tab to ensure Excel treats it as text
-    return `'${value}`;
-  }
-
-  return value;
-}
-
-/**
- * Generate CSV string from formatted data
- * Output format: Date,Description,Amount (no commas in numbers)
- * Properly sanitizes all special characters for CSV compatibility
- */
-function generateCSV(rows: FormattedRow[]): string {
-  const header = 'Date,Category,Description,Amount';
-  const lines = rows.map(row => {
-    // Sanitize description to prevent CSV injection
-    let description = removeNewlines(row.description);
-    description = sanitizeForCSV(description);
-
-    // Additional sanitization for special characters
-    // Remove or replace problematic characters that might break CSV parsers
-    description = description
-      .replace(/\x00/g, '') // Remove null bytes
-      .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F]/g, '') // Remove other control characters
-      .trim();
-
-    // Escape quotes and wrap in quotes if needed
-    // Always quote if contains comma, quote, newline, or starts with special char
-    const needsQuoting = description.includes(',') ||
-                         description.includes('"') ||
-                         description.includes('\n') ||
-                         description.startsWith("'");
-
-    if (needsQuoting) {
-      description = `"${description.replace(/"/g, '""')}"`;
-    }
-
-    // Format amount without commas - ensure it's a valid number
-    const amount = Number.isFinite(row.amount) ? row.amount.toFixed(2) : '0.00';
-
-    // Sanitize date to ensure it doesn't contain problematic characters
-    const date = row.date.replace(/[^\d/\-.\s]/g, '');
-
-    return `${date},,${description},${amount}`;
-  });
-
-  return [header, ...lines].join('\n');
 }
